@@ -1,0 +1,164 @@
+---
+title: "Multiple outcomes pregnancy"
+author: "Chase Latour"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+```
+
+# Upload the parameter Excel file.
+
+```{r}
+
+# Get the directory where the Rmd file is located
+rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+# Specify the Excel file name and path relative to the Rmd file location
+excel_file <- file.path(rmd_directory, "Simulation parameters.xlsx")
+
+# Read SheetA from the Excel file
+phase1 <- read_xlsx(excel_file, sheet = "Phase1")
+phase2 <- read_xlsx(excel_file, sheet = "Phase2")
+phase3 <- read_xlsx(excel_file, sheet = "Phase3")
+phase4 <- read_xlsx(excel_file, sheet = "Phase4")
+
+```
+
+
+# Data Generation Functions
+
+
+```{r}
+
+# Values for testing the functions
+
+n_sim <- 1
+n <- 40
+
+
+# This function will create the pregnancy outcomes based upon the probabilities
+# -- recorded in phase1, phase2, phase3, and phase4.
+sample_outcomes_for_id <- function(data) {
+  #id_data <- subset(your_data, id == id)  # Filter data for the specific id
+  
+  # Apply this function to each row of phase1-phase4 data where needed.
+  # -- Create vector of 1:nrow(data) and then apply the function below
+  outcomes <- sapply(1:nrow(data), function(i) { 
+    
+    # Indicate the potential options to select from
+    options <- c("fetaldeath_next", "livebirth_next", "contpreg_next")
+    
+    # Assign the probabilities to each of the potential pregnancy outcome options based upon 
+    # -- the corresponding rows in the phase1-4 files.
+    probabilities <- data[i, c("p_fetaldeath_next", "p_livebirth_next", "p_contpreg_next")]
+    
+    # Sample an option based on probabilities
+    sampled_option <- sample(options, size = 1, prob = probabilities)
+    
+    # Return that sampled option. This will be stored in the vector outcomes
+    return(sampled_option)
+  })
+  
+  return(outcomes)
+}
+
+
+#Testing: outcomes <- test$phase1_outcomes[[1]]
+
+## Still not giving the expected results when run through the data generation of each_sim
+
+pre20 <- function(outcomes){
+  outcomes_sub <- outcomes[1:20] # 0 through 19 -- Outcomes are observed at the following gestational week
+  first_ga <- which(outcomes_sub == 'fetaldeath_next')[1]
+  last_ga <- ifelse(is.na(first_ga),
+                 20,
+                 first_ga)
+  
+  return(last_ga)
+}
+
+
+each_sim <- function(n_sim, n){
+  
+  gw = list(seq(0,40, by = 1))
+  
+  data <- dplyr::tibble(
+    sim_id = n_sim,
+    id = 1:n
+  ) %>% 
+    rowwise %>% 
+    mutate(phase1_outcomes = list(sample_outcomes_for_id(phase1)),
+           last_GA_pre20 = pre20(phase1_outcomes)) #%>% 
+    #ungroup() %>% 
+    # Determine the range for each person's age at index. Week 4 through pregnancy loss <20 weeks or 20 weeks gestation
+    
+    
+  
+  return(data)
+  
+}
+
+## Test
+test <- each_sim(n_sim, n)
+
+
+
+
+
+#TargetRWE Code
+
+each_sim <- function(n_sim, t_total, vis_cadence, n, p_covar, vis_prob, val_list, sd_val, threshold, treat_prob, rate_out, treat_effect, exp_lab) {
+  t <- list(seq(0, t_total, by = vis_cadence))
+  
+  dplyr::tibble(
+    sim_id = n_sim,
+    id = 1:n,
+    covar = sample(1:length(p_covar), n, replace = TRUE, p_covar),
+    p_treat = treat_prob[covar],
+    p_vis = vis_prob[covar],
+    mean_val = val_list[covar],
+    rate_outcome = rate_out[covar],
+    exp_lab_vec = exp_lab[covar]
+  ) %>%
+    dplyr::mutate(
+      all_vis = mapply(make_visits,
+                       covar,
+                       p_treat,
+                       p_vis,
+                       mean_val,
+                       sd_val,
+                       rate_outcome,
+                       t,
+                       threshold,
+                       id,
+                       exp_lab_vec,
+                       SIMPLIFY = FALSE)
+    )
+}
+
+
+```
+
+
+
+# OLD CODE
+
+```{r}
+
+
+
+# sample_option <- function(row) {
+#   options <- c("fetaldeath_next", "livebirth_next", "contpreg_next")
+#   probabilities <- row[c("p_fetaldeath_next", "p_livebirth_next", "p_contpreg_next")]
+#   
+#   sampled_option <- sample(options, size = 1, prob = probabilities)
+#   return(sampled_option)
+# }
+
+```
