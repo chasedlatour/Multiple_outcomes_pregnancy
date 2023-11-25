@@ -103,39 +103,20 @@ each_sim <- function(n_sim, n){
       prob_preeclampsia = list(c(rep(0,25), odds_preeclampsia/(1+odds_preeclampsia))),
       
       # Use binomial r.v. to determine if someone has preeclampsia
-      preeclampsia_list = list(rbinom(length(prob_preeclampsia), size=1, prob=prob_preeclampsia)) ,
+      preeclampsia_list = list(rbinom(length(prob_preeclampsia), size=1, prob=prob_preeclampsia)),
       
       # Determine the final pregnancy outcomes with preeclampsia timing
-      final_pregnancy_outcomes = list(preg_outcome(phase2_outcomes, preeclampsia_list, phase3))
-      # final_pregnancy_outcomes = mapply(preg_outcome,
-      #                                   phase2_outcomes,
-      #                                   preeclampsia_list,
-      #                                   phase3)
+      final_pregnancy_outcomes = list(preg_outcome(phase2_outcomes, preeclampsia_list, phase3)),
       
-      # Determine the gestational timing of preeclampsia
-      # -- Don't subtract 1 because this is the gestational week that they develop preeclampsia
-      # preeclampsia_gw = which(preeclampsia_list == 1)[1], 
       
-      # Create preeclampsia indicator
-      # preeclampsia = ifelse(is.na(preeclampsia_gw),
-      #                       0,
-      #                       1)
-            
-      # Determine the final pregnancy outcomes for each observed pregnancy and the timing of that
-      # -- pregnancy outcome
-      #preg_outcome_final = 
+      ##### PHASE 4 -- Determine if people have SGA
       
-    ) #%>% 
-    # ungroup %>% 
-    # mutate(final_pregnancy_outcomes = mapply(preg_outcome,
-    #                                     phase2_outcomes,
-    #                                     preeclampsia_list,
-    #                                     phase3,
-    #                                     SIMPLIFY = FALSE))
+      sga = sga_func(final_pregnancy_outcomes, trt, phase4)
+
       
-       #%>% 
-    #ungroup() %>% 
-    # Determine the range for each person's age at index. Week 4 through pregnancy loss <20 weeks or 20 weeks gestation
+    ) %>% 
+    ungroup() %>% 
+    unnest_wider(final_pregnancy_outcomes)
     
     
   
@@ -147,6 +128,16 @@ each_sim <- function(n_sim, n){
 set.seed(1234)
 test <- each_sim(n_sim, n)
 
+
+# SOME BUGS:
+
+# phase2_outcomes are not being output like expected. Sometimes "outcome #" is in the list. -- There are also more than 41
+# This seems to be having ramifications for how preeclampsia gw is being output. For those with preeclampsia first, they're 
+# getting a NA for their GW.
+# Look at sample_outcomes_for_id. I wonder if part of the problem is that it's a returning a list, which is outputting a vector
+# in a different format than I'm expecting. I added an unlist() function to the phase2 resampling. See if that improves. Row 
+# 194 of test might be a good place to start.
+# Didn't seem to fix the issue
 
 
 
@@ -182,8 +173,8 @@ sample_outcomes_for_id <- function(data) {
     return(sampled_option)
   })
   
-  list(outcomes = outcomes)
-  #return(outcomes)
+  #list(outcomes = outcomes)
+  return(list(outcomes))
 }
 
 #Testing: outcomes <- test$phase1_outcomes[[1]]
@@ -217,8 +208,8 @@ sample_index_for_id <- function(data) {
     return(sampled_option)
   })
   
-  list(outcomes = outcomes)
-  #return(outcomes)
+  #list(outcomes = outcomes)
+  return(list(outcomes))
 }
 
 
@@ -265,10 +256,13 @@ resample_outcomes <- function(first_index, phase1_outcomes, phase2){
   phase1 <- phase1_outcomes[1:(index-1)]
   
   # Re-sample outcomes for phase2
-  phase2 <- sample_outcomes_for_id(phase2)
+  phase2 <- unlist(sample_outcomes_for_id(phase2))
   
   # Now merge them together
   outcomes <- c(phase1, phase2[index:length(phase2)])
+  
+  # BUG -- Wonder if the problem is that sample_outcomes_for_id is returning a list which is not the type that we want.
+  # When look at row 194, things behave oddly.
   
   # Coerce outcomes to a vector
   # -- This step is necessary to make sure that the values come out as the same type as phase1_outcomes.
@@ -282,6 +276,7 @@ resample_outcomes <- function(first_index, phase1_outcomes, phase2){
 ## This function generates the final pregnancy outcome for each of the observed pregnancies
 
 preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
+  #browser()
   
   # Determine which occurred first: pregnancy outcome or preeclampsia.
   # -- If they occurred within the same gestational week, we will assume that the preeclampsia occurred first.
@@ -290,10 +285,11 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
   first_outcome_index <- which(phase2_outcomes %in% c('fetaldeath_next','livebirth_next'))[1]
   
   ## First preeclampsia from preeclampsia_list
-  first_preeclampia <- which(preeclampsia_list == 1)[1]
+  first_preeclampsia <- which(preeclampsia_list == 1)[1]
   
-  ## If first outcome from phase2_outcomes, then return a list of those pregnancy outcomes
-  if(first_outcome_index <- first_preeclampsia){
+  # If no preeclampsia evidence or first outcome from phase2_outcomes, 
+  # -- then return a list of pregnancy outcomes from phase2_outcomes
+  if(first_outcome_index < first_preeclampsia | is.na(first_preeclampsia)){
     return(list(
       
       # Determine what the final outcome was from phase2_outcomes
@@ -309,9 +305,10 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       preeclampsia = 0
     ))
   }
-    
+
+
     ## If first or equally first outcome is preeclampsia, then regenerate the pregnancy outcome and timing
-    if(first_outcome_index >= first_preeclampia){
+    if(first_outcome_index >= first_preeclampsia){
       
       # Regenerate the pregnancy outcome
       p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia-1)$p_fetaldeath
@@ -319,7 +316,7 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       options <- c("fetaldeath", "livebirth")
       # Assign the corresponding probabilities to each of the potential pregnancy outcomes
       probabilities <- c(p_fetaldeath, p_livebirth)
-      outcome <- sampple(options, size=1, prob=probabilities)
+      outcome <- sample(options, size=1, prob=probabilities)
       
       return(list(
         
@@ -335,6 +332,17 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       ))
     }
   
+}
+
+sga_func <- function(final_pregnancy_outcomes, trt, phase4){
+  
+  # Determine probability of SGA based upon trt and preeclampsia
+  prob_sga <- subset(phase4, trt_value == trt & preeclampsia_flag == final_pregnancy_outcomes$preeclampsia)$p_sga
+  
+  # Determine if they actually had SGA based upon this probability
+  sga <- rbinom(1,1, prob = prob_sga)
+  
+  return(sga)
 }
 
 
