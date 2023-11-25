@@ -83,18 +83,27 @@ pre20 <- function(outcomes){
   return(last_ga)
 }
 
-
+# This function will be run to generate a cohort for each simulation
 each_sim <- function(n_sim, n){
   
+  # Generate 0 through 40 gestational weeks - 1 vector
   gw = list(seq(0,40, by = 1))
   
+  
+  # Create the dataset that going to output
   data <- dplyr::tibble(
-    sim_id = n_sim,
-    id = 1:n
+    sim_id = n_sim, # Simulation ID
+    id = 1:n # Each individual's ID
   ) %>% 
     rowwise %>% 
-    mutate(phase1_outcomes = list(sample_outcomes_for_id(phase1)),
-           last_GA_pre20 = pre20(phase1_outcomes)) #%>% 
+    mutate(
+      # Create the pregnancy outcomees for Phase 1 of the data generation
+      phase1_outcomes = list(sample_outcomes_for_id(phase1)), 
+      
+      # Identify the last gestational week that a person experiences up to 20 weeks of gestation
+      last_GA_pre20 = pre20(phase1_outcomes)
+      
+      ) #%>% 
     #ungroup() %>% 
     # Determine the range for each person's age at index. Week 4 through pregnancy loss <20 weeks or 20 weeks gestation
     
