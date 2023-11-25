@@ -63,6 +63,9 @@ each_sim <- function(n_sim, n){
   ) %>% 
     rowwise %>% 
     mutate(
+      
+      #### PHASE 1
+      
       # Create the pregnancy outcomes for Phase 1 of the data generation
       #phase1_outcomes = list(sample_outcomes_for_id(phase1)), 
       phase1_outcomes = sample_outcomes_for_id(phase1), 
@@ -83,6 +86,8 @@ each_sim <- function(n_sim, n){
       # -- enters the trial. If last_GA_pre20 < first_index, then they can't enter the trial.
       trial_participant = (last_GA_pre20 >= 4) && (first_index <= last_GA_pre20),
       
+      #### PHASE 2
+      
       # Not going to subset to trial participants for now
       # Generate pregnancy outcomes for phase2, focusing on those pregnancies that are treated
       phase2_outcomes = ifelse(trt == 0, # If untreated
@@ -90,8 +95,43 @@ each_sim <- function(n_sim, n){
                                list(phase1_outcomes),
                                resample_outcomes(first_index, phase1_outcomes, phase2)),
       
+      #### PHASE 3 -- determine whether a person developed preeclampsia & revised outcomes
       
-    )
+      # Calculate their odds of preeclampsia from logistic regression
+      odds_preeclampsia = list(exp(phase3$ln_odds_preeclampsia + (phase3$treat_effect_ln_OR * trt))),
+      # Calculate the probability of preeclampsia
+      prob_preeclampsia = list(c(rep(0,25), odds_preeclampsia/(1+odds_preeclampsia))),
+      
+      # Use binomial r.v. to determine if someone has preeclampsia
+      preeclampsia_list = list(rbinom(length(prob_preeclampsia), size=1, prob=prob_preeclampsia)) ,
+      
+      # Determine the final pregnancy outcomes with preeclampsia timing
+      final_pregnancy_outcomes = list(preg_outcome(phase2_outcomes, preeclampsia_list, phase3))
+      # final_pregnancy_outcomes = mapply(preg_outcome,
+      #                                   phase2_outcomes,
+      #                                   preeclampsia_list,
+      #                                   phase3)
+      
+      # Determine the gestational timing of preeclampsia
+      # -- Don't subtract 1 because this is the gestational week that they develop preeclampsia
+      # preeclampsia_gw = which(preeclampsia_list == 1)[1], 
+      
+      # Create preeclampsia indicator
+      # preeclampsia = ifelse(is.na(preeclampsia_gw),
+      #                       0,
+      #                       1)
+            
+      # Determine the final pregnancy outcomes for each observed pregnancy and the timing of that
+      # -- pregnancy outcome
+      #preg_outcome_final = 
+      
+    ) #%>% 
+    # ungroup %>% 
+    # mutate(final_pregnancy_outcomes = mapply(preg_outcome,
+    #                                     phase2_outcomes,
+    #                                     preeclampsia_list,
+    #                                     phase3,
+    #                                     SIMPLIFY = FALSE))
       
        #%>% 
     #ungroup() %>% 
@@ -235,6 +275,65 @@ resample_outcomes <- function(first_index, phase1_outcomes, phase2){
   outcomes <- unlist(outcomes)
   
   list(outcomes = outcomes)
+  
+}
+
+
+## This function generates the final pregnancy outcome for each of the observed pregnancies
+
+preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
+  
+  # Determine which occurred first: pregnancy outcome or preeclampsia.
+  # -- If they occurred within the same gestational week, we will assume that the preeclampsia occurred first.
+  
+  ## First outcome from phase2_outcomes
+  first_outcome_index <- which(phase2_outcomes %in% c('fetaldeath_next','livebirth_next'))[1]
+  
+  ## First preeclampsia from preeclampsia_list
+  first_preeclampia <- which(preeclampsia_list == 1)[1]
+  
+  ## If first outcome from phase2_outcomes, then return a list of those pregnancy outcomes
+  if(first_outcome_index <- first_preeclampsia){
+    return(list(
+      
+      # Determine what the final outcome was from phase2_outcomes
+      preg_outcome_final = sub("_next$", "", phase2_outcomes[first_outcome_index]),
+      
+      # Determine the gestational timing of the first outcome
+      # -- Note that we do not subtract 1 here. While R indexes at 1 and we index at 0 (conception),
+      # -- we assume that the outcome was observed at the following gestational week.
+      # -- Thus, we would add 1 to the subtracted 1, which negates the action.
+      preg_outcome_final_gw = first_outcome_index,
+      
+      # Make preeclampsia indicator - Preeclampsia didn't occur before the outcome and so not observed
+      preeclampsia = 0
+    ))
+  }
+    
+    ## If first or equally first outcome is preeclampsia, then regenerate the pregnancy outcome and timing
+    if(first_outcome_index >= first_preeclampia){
+      
+      # Regenerate the pregnancy outcome
+      p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia-1)$p_fetaldeath
+      p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia-1)$p_livebirth
+      options <- c("fetaldeath", "livebirth")
+      # Assign the corresponding probabilities to each of the potential pregnancy outcomes
+      probabilities <- c(p_fetaldeath, p_livebirth)
+      outcome <- sampple(options, size=1, prob=probabilities)
+      
+      return(list(
+        
+        # Determine the final pregnancy outcome from the probabilities in phase 3
+        preg_outcome_final = outcome,
+        
+        # Determine the gestational timing of the outcome - same logic on not subtracting 1
+        preg_outcome_final_gw = first_preeclampia,
+        
+        # Make preeclampsia indicator - Preeclampsia observed before the outcome so observed
+        preeclampsia = 1
+        
+      ))
+    }
   
 }
 
