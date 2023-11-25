@@ -33,14 +33,91 @@ phase4 <- read_xlsx(excel_file, sheet = "Phase4")
 
 # Data Generation Functions
 
+This is the baseline function that will be used to generate each cohort.
 
 ```{r}
 
 # Values for testing the functions
 
 n_sim <- 1
-n <- 40
+n <- 200
 
+
+
+# This function will be run to generate a cohort for each simulation
+each_sim <- function(n_sim, n){
+  
+  # Generate 0 through 40 gestational weeks - 1 vector
+  gw = list(seq(0,40, by = 1))
+  
+  # Create the dataset that going to output
+  data <- dplyr::tibble(
+    
+    sim_id = n_sim, # Simulation ID
+    
+    id = 1:n, # Each individual's ID
+    
+    # Assign treatment here - doesn't matter when but efficient here
+    trt = rbinom(n=n, size=1, prob=0.5)
+    
+  ) %>% 
+    rowwise %>% 
+    mutate(
+      # Create the pregnancy outcomes for Phase 1 of the data generation
+      #phase1_outcomes = list(sample_outcomes_for_id(phase1)), 
+      phase1_outcomes = sample_outcomes_for_id(phase1), 
+      
+      # Identify the last gestational week that a person experiences of pregnancy up to 20 weeks of gestation
+      last_GA_pre20 = pre20(phase1_outcomes),
+      
+      # Create the index outcomes for the trial
+      index_gw = list(rbinom(nrow(phase1), size=1, prob=phase1$p_index)),
+      
+      # Identify the first index event -- At least one should be 1 because
+      # -- Probability of index at week 20 is 1.
+      first_index = which(index_gw == 1)[1] - 1,
+      # Subtract 1 because we index at conception or week 0, and R indexes at 1
+      # The same was done for index_gw last_GA_pre20 in the function.
+      
+      # Create an indicator variable as to whether the patient actually
+      # -- enters the trial. If last_GA_pre20 < first_index, then they can't enter the trial.
+      trial_participant = (last_GA_pre20 >= 4) && (first_index <= last_GA_pre20),
+      
+      # Not going to subset to trial participants for now
+      # Generate pregnancy outcomes for phase2, focusing on those pregnancies that are treated
+      phase2_outcomes = ifelse(trt == 0, # If untreated
+                               #I(list(phase1_outcomes)),
+                               list(phase1_outcomes),
+                               resample_outcomes(first_index, phase1_outcomes, phase2)),
+      
+      
+    )
+      
+       #%>% 
+    #ungroup() %>% 
+    # Determine the range for each person's age at index. Week 4 through pregnancy loss <20 weeks or 20 weeks gestation
+    
+    
+  
+  return(data)
+  
+}
+
+## Test
+set.seed(1234)
+test <- each_sim(n_sim, n)
+
+
+
+
+
+
+
+```
+
+Below, are all of the functions that will be used within the `each_sim()` function.
+
+```{r}
 
 # This function will create the pregnancy outcomes based upon the probabilities
 # -- recorded in phase1, phase2, phase3, and phase4.
@@ -65,95 +142,104 @@ sample_outcomes_for_id <- function(data) {
     return(sampled_option)
   })
   
-  return(outcomes)
+  list(outcomes = outcomes)
+  #return(outcomes)
 }
-
 
 #Testing: outcomes <- test$phase1_outcomes[[1]]
 
-## Still not giving the expected results when run through the data generation of each_sim
+
+# This function will create a vector of index events based upon the probabilities
+# -- recorded in phase1.
+sample_index_for_id <- function(data) {
+  #id_data <- subset(your_data, id == id)  # Filter data for the specific id
+  
+  # Apply this function to each row of phase1-phase4 data where needed.
+  # -- Create vector of 1:nrow(data) and then apply the function below
+  indices <- sapply(1:nrow(data), function(i) { 
+    
+    # Determine the probability of an index at that gestational week
+    prob = phase1$p_index[i]
+    
+    # Sample the index value based upon that probability
+    
+    # Indicate the potential options to select from
+    options <- c("contpreg_next")
+    
+    # Assign the probabilities to each of the potential pregnancy outcome options based upon 
+    # -- the corresponding rows in the phase1-4 files.
+    probabilities <- data[i, c("p_fetaldeath_next", "p_livebirth_next", "p_contpreg_next")]
+    
+    # Sample an option based on probabilities
+    sampled_option <- sample(options, size = 1, prob = probabilities)
+    
+    # Return that sampled option. This will be stored in the vector outcomes
+    return(sampled_option)
+  })
+  
+  list(outcomes = outcomes)
+  #return(outcomes)
+}
+
+
+
+
+
 
 pre20 <- function(outcomes){
-  outcomes_sub <- outcomes[1:20] # 0 through 19 -- Outcomes are observed at the following gestational week
+  # Create a subset of gestational weeks 0 through 19, though note that these
+  # -- are indexed as 1:20 because of R's coding style (vector indices start at 1). 
+  # -- Notably for moving forward, outcomes are observed at the following gestational week
+  outcomes_sub <- outcomes[1:20]  # Represents 0:19
+  # Testing: outcomes_sub <- outcomes[[1]][1:20]
+  
+  # Identify the first gestational week where we will see a fetal death on the 
+  # -- following gestational week.
   first_ga <- which(outcomes_sub == 'fetaldeath_next')[1]
+  
+  # Identify the last gestational week that someone could be indexed into the cohort.
+  # -- This would be the last week before someone experiences a fetal death.
   last_ga <- ifelse(is.na(first_ga),
                  20,
-                 first_ga)
+                 first_ga - 1) 
+  # Subtracted 1 because first_ga is indexed starting at 1, while our gestational weeks are indexed
+  # -- starting at 0.
   
   return(last_ga)
 }
 
-# This function will be run to generate a cohort for each simulation
-each_sim <- function(n_sim, n){
+
+# Re-sample pregnancy outcomes for those pregnancies that were treated.
+# -- Want to retain their phase1 outcomes until their index event, and then 
+# -- resample all pregnancy outcomes starting at their index.
+# -- This assumes an immediate treatment effect.
+resample_outcomes <- function(first_index, phase1_outcomes, phase2){
   
-  # Generate 0 through 40 gestational weeks - 1 vector
-  gw = list(seq(0,40, by = 1))
+  #browser()
   
+  # Add 1 to accomodate R vector indexing starting at 1
+  index <- first_index + 1 
   
-  # Create the dataset that going to output
-  data <- dplyr::tibble(
-    sim_id = n_sim, # Simulation ID
-    id = 1:n # Each individual's ID
-  ) %>% 
-    rowwise %>% 
-    mutate(
-      # Create the pregnancy outcomees for Phase 1 of the data generation
-      phase1_outcomes = list(sample_outcomes_for_id(phase1)), 
-      
-      # Identify the last gestational week that a person experiences up to 20 weeks of gestation
-      last_GA_pre20 = pre20(phase1_outcomes)
-      
-      ) #%>% 
-    #ungroup() %>% 
-    # Determine the range for each person's age at index. Week 4 through pregnancy loss <20 weeks or 20 weeks gestation
-    
-    
+  # Grab all the phase1 outcomes that don't change.
+  # -- Want all those values BEFORE the index
+  phase1 <- phase1_outcomes[1:(index-1)]
   
-  return(data)
+  # Re-sample outcomes for phase2
+  phase2 <- sample_outcomes_for_id(phase2)
   
-}
-
-## Test
-test <- each_sim(n_sim, n)
-
-
-
-
-
-#TargetRWE Code
-
-each_sim <- function(n_sim, t_total, vis_cadence, n, p_covar, vis_prob, val_list, sd_val, threshold, treat_prob, rate_out, treat_effect, exp_lab) {
-  t <- list(seq(0, t_total, by = vis_cadence))
+  # Now merge them together
+  outcomes <- c(phase1, phase2[index:length(phase2)])
   
-  dplyr::tibble(
-    sim_id = n_sim,
-    id = 1:n,
-    covar = sample(1:length(p_covar), n, replace = TRUE, p_covar),
-    p_treat = treat_prob[covar],
-    p_vis = vis_prob[covar],
-    mean_val = val_list[covar],
-    rate_outcome = rate_out[covar],
-    exp_lab_vec = exp_lab[covar]
-  ) %>%
-    dplyr::mutate(
-      all_vis = mapply(make_visits,
-                       covar,
-                       p_treat,
-                       p_vis,
-                       mean_val,
-                       sd_val,
-                       rate_outcome,
-                       t,
-                       threshold,
-                       id,
-                       exp_lab_vec,
-                       SIMPLIFY = FALSE)
-    )
+  # Coerce outcomes to a vector
+  # -- This step is necessary to make sure that the values come out as the same type as phase1_outcomes.
+  outcomes <- unlist(outcomes)
+  
+  list(outcomes = outcomes)
+  
 }
 
 
 ```
-
 
 
 # OLD CODE
