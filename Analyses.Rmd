@@ -43,14 +43,59 @@ trial <- dataset %>%
 
 ```
 
-## Number of trial participants, across treatment groups
+## Number of trial participants
+
+### Total
+
+```{r}
+
+trial %>% 
+  summarize(count = n())
+
+```
+
+### Across treatment groups
 
 ```{r}
 
 # Approx half and half, as expected
 trial %>% 
   group_by(trt) %>% 
-  summarize(count = n())
+  summarize(count = n(),
+            percent = round(count / nrow(trial) * 100),2)
+
+```
+
+### Timing of indexing into the cohort
+
+Indexing was not intentionally differential by treatment group. If differences occur, it is likely due to patterns of pregnancy loss. This may not be particularly dramatic in the setting where everyone has a 50/50 chance of indexing every gestational week from weeks 4 through 20 (from conception).
+
+Quantitative description of the distribution of trial indices, by treatment group.
+
+```{r}
+
+trial %>% 
+  group_by(trt) %>% 
+  summarize(
+            min = min(first_index),
+            p25 = quantile(first_index, 0.25),
+            median = median(first_index),
+            p75 = quantile (first_index, 0.75),
+            max = max(first_index)
+            )
+
+# Not sure why we don't see fetal deaths after 34 weeks. Potentially a low prob issue (i.e., not enough n to see those?) - That is where the probability drops substantially in the simulation parameters.
+
+```
+
+Figural description of the distribution of pregnancy outcomes, facet wrapped by treatment group.
+
+```{r}
+
+trial %>% 
+  ggplot(aes(x = first_index)) +
+  geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
+  facet_grid(facets = trt ~.)
 
 ```
 
