@@ -112,6 +112,9 @@ each_sim <- function(n_sim, n){
       ##### PHASE 4 -- Determine if people have SGA
       
       sga = sga_func(final_pregnancy_outcomes, trt, phase4)
+      
+      
+      ##### PHASE 5 -- Censoring -- STILL NEED TO INCORPORATE THIS.
 
       
     ) %>% 
@@ -346,28 +349,25 @@ Generate the data for one clinical trial.
 ```{r}
 
 # Specify the required values for the simulation
-# n_sim <- 1
-# n <- 200
+n_sim <- 1
+n <- 2000
 
-# set.seed(1234)
-# test <- each_sim(n_sim, n)
+set.seed(1234)
+data <- each_sim(n_sim, n)
 
+### Save the file as an RDS file
 
-```
+# Get the directory where the Rmd file is located
+rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
 
+# Specify the Excel file name and path relative to the Rmd file location
+data_save <- file.path(rmd_directory, "data.rds")
 
-# OLD CODE
+saveRDS(data, file = data_save)
 
-```{r}
+# Eventually - want to write in code that will save these data. 
+# -- For other simulations, will want to incorporate parallel processing. This currently takes a while
+# -- Maybe should get rid of some of the if/then options if possible.
 
-
-
-# sample_option <- function(row) {
-#   options <- c("fetaldeath_next", "livebirth_next", "contpreg_next")
-#   probabilities <- row[c("p_fetaldeath_next", "p_livebirth_next", "p_contpreg_next")]
-#   
-#   sampled_option <- sample(options, size = 1, prob = probabilities)
-#   return(sampled_option)
-# }
 
 ```

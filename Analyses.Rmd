@@ -1,0 +1,116 @@
+---
+title: "Analyses"
+author: "Chase Latour"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+# Description
+
+This HTML/Rmd document will contain the analyses for the data generated for the multiple_outcomes_pregnancy R project.
+
+# Describe Cohort
+
+Describe the patient cohort. This will allow us to check for weird data issues.
+
+## Read in the data
+
+```{r}
+
+# Get the directory where the Rmd file is located
+rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+# Specify the Excel file name and path relative to the Rmd file location
+data_read <- file.path(rmd_directory, "data.rds")
+
+dataset <- readRDS(data, file = data_read)
+
+```
+
+## Identify the cohort that entered the trial.
+
+```{r}
+
+
+trial <- dataset %>% 
+  subset(trial_participant == TRUE)
+
+```
+
+## Number of trial participants, across treatment groups
+
+```{r}
+
+# Approx half and half, as expected
+trial %>% 
+  group_by(trt) %>% 
+  summarize(count = n())
+
+```
+
+## Number of live births and fetal deaths across treatment groups
+
+```{r}
+
+trial %>% 
+  group_by(trt) %>% 
+  summarize(fetal_death = sum(preg_outcome_final == 'fetaldeath'),
+            fd_percent = round(fetal_death / n() * 100,1),
+            livebirth = sum(preg_outcome_final == 'livebirth'),
+            lb_percent = round(livebirth / n() * 100,1))
+
+```
+
+## Distribution of pregnancy outcomes
+
+Quantitative description of the distribution of pregnancy outcomes, by treatment group.
+
+```{r}
+
+trial %>% 
+  group_by(trt, preg_outcome_final) %>% 
+  summarize(
+            min = min(preg_outcome_final_gw),
+            p25 = quantile(preg_outcome_final_gw, 0.25),
+            median = median(preg_outcome_final_gw),
+            p75 = quantile (preg_outcome_final_gw, 0.75),
+            max = max(preg_outcome_final_gw)
+            )
+
+# Not sure why we don't see fetal deaths after 34 weeks. Potentially a low prob issue (i.e., not enough n to see those?) - That is where the probability drops substantially in the simulation parameters.
+
+```
+
+Figural description of the distribution of pregnancy outcomes, facet wrapped by treatment group.
+
+```{r}
+
+trial %>% 
+  ggplot(aes(x = preg_outcome_final_gw, color = preg_outcome_final, fill = preg_outcome_final)) +
+  geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
+  facet_grid(facets = trt ~.)
+
+```
+
+## Number with preeclampsia and SGA
+
+By treatment group.
+
+```{r}
+
+trial %>% 
+  group_by(trt) %>% 
+  summarize(preeclampsia = sum(preeclampsia == 1),
+            preec_perc = round(preeclampsia / n() * 100, 1),
+            sga = sum(sga == 1),
+            sga_perc = round(sga / n() * 100, 1))
+
+```
+
+# Conduct Analyses
