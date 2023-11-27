@@ -39,8 +39,8 @@ This is the baseline function that will be used to generate each cohort.
 
 # Values for testing the functions
 
-n_sim <- 1
-n <- 200
+# n_sim <- 1
+# n <- 200
 
 
 
@@ -125,19 +125,9 @@ each_sim <- function(n_sim, n){
 }
 
 ## Test
-set.seed(1234)
-test <- each_sim(n_sim, n)
+# set.seed(1234)
+# test <- each_sim(n_sim, n)
 
-
-# SOME BUGS:
-
-# phase2_outcomes are not being output like expected. Sometimes "outcome #" is in the list. -- There are also more than 41
-# This seems to be having ramifications for how preeclampsia gw is being output. For those with preeclampsia first, they're 
-# getting a NA for their GW.
-# Look at sample_outcomes_for_id. I wonder if part of the problem is that it's a returning a list, which is outputting a vector
-# in a different format than I'm expecting. I added an unlist() function to the phase2 resampling. See if that improves. Row 
-# 194 of test might be a good place to start.
-# Didn't seem to fix the issue
 
 
 
@@ -311,8 +301,8 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
     if(first_outcome_index >= first_preeclampsia){
       
       # Regenerate the pregnancy outcome
-      p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia-1)$p_fetaldeath
-      p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia-1)$p_livebirth
+      p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_fetaldeath
+      p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_livebirth
       options <- c("fetaldeath", "livebirth")
       # Assign the corresponding probabilities to each of the potential pregnancy outcomes
       probabilities <- c(p_fetaldeath, p_livebirth)
@@ -324,7 +314,7 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
         preg_outcome_final = outcome,
         
         # Determine the gestational timing of the outcome - same logic on not subtracting 1
-        preg_outcome_final_gw = first_preeclampia,
+        preg_outcome_final_gw = first_preeclampsia,
         
         # Make preeclampsia indicator - Preeclampsia observed before the outcome so observed
         preeclampsia = 1
@@ -344,6 +334,23 @@ sga_func <- function(final_pregnancy_outcomes, trt, phase4){
   
   return(sga)
 }
+
+
+```
+
+
+# Generate the Data
+
+Generate the data for one clinical trial.
+
+```{r}
+
+# Specify the required values for the simulation
+# n_sim <- 1
+# n <- 200
+
+# set.seed(1234)
+# test <- each_sim(n_sim, n)
 
 
 ```
