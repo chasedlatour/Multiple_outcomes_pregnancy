@@ -70,7 +70,7 @@ trial %>%
 
 Indexing was not intentionally differential by treatment group. If differences occur, it is likely due to patterns of pregnancy loss. This may not be particularly dramatic in the setting where everyone has a 50/50 chance of indexing every gestational week from weeks 4 through 20 (from conception).
 
-Quantitative description of the distribution of trial indices, by treatment group.
+Quantitative description of the distribution of gestational age at trial indices, by treatment group.
 
 ```{r}
 
@@ -83,8 +83,6 @@ trial %>%
             p75 = quantile (first_index, 0.75),
             max = max(first_index)
             )
-
-# Not sure why we don't see fetal deaths after 34 weeks. Potentially a low prob issue (i.e., not enough n to see those?) - That is where the probability drops substantially in the simulation parameters.
 
 ```
 
@@ -127,8 +125,6 @@ trial %>%
             p75 = quantile (preg_outcome_final_gw, 0.75),
             max = max(preg_outcome_final_gw)
             )
-
-# Not sure why we don't see fetal deaths after 34 weeks. Potentially a low prob issue (i.e., not enough n to see those?) - That is where the probability drops substantially in the simulation parameters.
 
 ```
 
