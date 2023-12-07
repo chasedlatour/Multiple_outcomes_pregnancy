@@ -90,10 +90,13 @@ each_sim <- function(n_sim, n){
       
       # Not going to subset to trial participants for now
       # Generate pregnancy outcomes for phase2, focusing on those pregnancies that are treated
-      phase2_outcomes = ifelse(trt == 0, # If untreated
-                               #I(list(phase1_outcomes)),
-                               list(phase1_outcomes),
-                               resample_outcomes(first_index, phase1_outcomes, phase2)),
+      # phase2_outcomes = ifelse(trt == 0, # If untreated
+      #                          #I(list(phase1_outcomes)),
+      #                          list(phase1_outcomes),
+      #                          resample_outcomes(first_index, phase1_outcomes, phase2)),
+      
+      # Create all of the outcomes if they had been treated at the first_index
+      phase2_outcomes = resample_outcomes(first_index, phase1_outcomes, phase2),
       
       #### PHASE 3 -- determine whether a person developed preeclampsia & revised outcomes
       
@@ -105,13 +108,19 @@ each_sim <- function(n_sim, n){
       # Use binomial r.v. to determine if someone has preeclampsia
       preeclampsia_list = list(rbinom(length(prob_preeclampsia), size=1, prob=prob_preeclampsia)),
       
-      # Determine the final pregnancy outcomes with preeclampsia timing
-      final_pregnancy_outcomes = list(preg_outcome(phase2_outcomes, preeclampsia_list, phase3)),
+      # Determine the final pregnancy outcomes with preeclampsia timing 
+      ## These are outcomes if all were treated (i.e., potential outcomes)
+      final_pregnancy_outcomes_trt = list(preg_outcome(phase2_outcomes, preeclampsia_list, phase3)),
+      ## These are outcomes if all were untreated (i.e., potential outcomes)
+      final_pregnancy_outcomes_untrt = list(preg_outcome(phase1_outcomes, preeclampsia_list, phase3)),
       
       
       ##### PHASE 4 -- Determine if people have SGA
-      
-      sga = sga_func(final_pregnancy_outcomes, trt, phase4)
+      ## These are outcomes if all were treated (i.e., potential outcomes)
+      sga_trt = sga_func(final_pregnancy_outcomes_trt, 1, phase4),
+      ## These are outcomes if all were untreated (i.e., potential outcomes)
+      sga_untrt = sga_func(final_pregnancy_outcomes_trt, 0, phase4)
+      #sga = sga_func(final_pregnancy_outcomes, trt, phase4)
       
       
       ##### PHASE 5 -- Censoring -- STILL NEED TO INCORPORATE THIS.
@@ -119,9 +128,11 @@ each_sim <- function(n_sim, n){
       
     ) %>% 
     ungroup() %>% 
-    unnest_wider(final_pregnancy_outcomes)
-    
-    
+    mutate(final_pregnancy_outcomes_trt = map(final_pregnancy_outcomes_trt, 
+                                              ~set_names(.x, str_c(names(.x), "_trt"))),
+           final_pregnancy_outcomes_untrt = map(final_pregnancy_outcomes_untrt, 
+                                              ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
+    unnest_wider(c(final_pregnancy_outcomes_trt, final_pregnancy_outcomes_untrt)) 
   
   return(data)
   
@@ -254,9 +265,6 @@ resample_outcomes <- function(first_index, phase1_outcomes, phase2){
   # Now merge them together
   outcomes <- c(phase1, phase2[index:length(phase2)])
   
-  # BUG -- Wonder if the problem is that sample_outcomes_for_id is returning a list which is not the type that we want.
-  # When look at row 194, things behave oddly.
-  
   # Coerce outcomes to a vector
   # -- This step is necessary to make sure that the values come out as the same type as phase1_outcomes.
   outcomes <- unlist(outcomes)
@@ -289,10 +297,9 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       preg_outcome_final = sub("_next$", "", phase2_outcomes[first_outcome_index]),
       
       # Determine the gestational timing of the first outcome
-      # -- Note that we do not subtract 1 here. While R indexes at 1 and we index at 0 (conception),
-      # -- we assume that the outcome was observed at the following gestational week.
-      # -- Thus, we would add 1 to the subtracted 1, which negates the action.
-      preg_outcome_final_gw = first_outcome_index,
+      # -- We add 1 here because we are assuming that the outcome is observed at the 
+      # -- week after they're determined.
+      preg_outcome_final_gw = first_outcome_index + 1,
       
       # Make preeclampsia indicator - Preeclampsia didn't occur before the outcome and so not observed
       preeclampsia = 0
