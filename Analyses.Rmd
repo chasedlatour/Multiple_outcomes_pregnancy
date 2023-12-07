@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(survival)
+library(Epi)
 ```
 
 # Description
@@ -182,6 +183,10 @@ trial %>%
 
 ## Composite Preeclampsia and Fetal Death
 
+### KM Estimator
+
+Output the cumulative incidence curves at the end of follow-up.
+
 ```{r}
 
 ## Create the composite outcome
@@ -194,7 +199,7 @@ trial2 <- trial %>%
 km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
 #summary(km)
 
-wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, 
+wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, sd = km$std.err,
                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
 riskplot <- ggplot() +
   geom_step(data = wrisk, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
@@ -207,11 +212,18 @@ riskplot <- ggplot() +
   theme(legend.position = c(0.28, 0.9), legend.title = element_blank(),
         legend.background = element_rect(fill="transparent"), 
         panel.background = element_rect(fill = NA), 
-        panel.grid.major = element_line(colour = "gray", linetype = "dotted"))
+        panel.grid.major = element_line(colour = "gray", linetype = "dotted")) #+
+  #title("Kaplan-Meier Cumulative Incidence Curves for Composite Outcome")
 
 riskplot
 
-ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+
+```
+
+Output the risk ratio at the end of follow-up.
+
+```{r}
 
 
 #get rr
@@ -222,6 +234,14 @@ rr <- wrisk %>%
   filter(rr == last(rr)) %>% select(rr) %>% unlist()
 rr
 
+# Need to write the code to get the 95% CI
+
+
+```
+
+### AJ Estimator
+
+```{r}
 
 ## Run the competing events analysis
 ## -- We haven't introduced censoring right now, so there are only two possible outcomes:
@@ -236,6 +256,96 @@ trial2 <- trial2 %>%
     jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
     preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw))
 
+
+
+
+## Plotting AJ estimators:
+#https://search.r-project.org/CRAN/refmans/Epi/html/plotCIF.html
+
+## More AJ R code:
+#https://cran.r-project.org/web/packages/AalenJohansen/index.html
+
+
+
+
+
+
+# Jess's original code
+
+
+#' a function to estimate risk of preg loss by end of follow-up
+#' 
+est_risk <- function(data){
+  mod <- survfit(Surv(t_pend, factor(j_birth)) ~ 1, data = data)
+  smod <- summary(mod)
+  resdat <- data.frame(time = smod$time, risk = smod$pstate[,2], risklb  = smod$pstate[,3])
+  return(resdat %>% slice(n()) %>% pull(risk))
+}
+
+
+wraprisk <- function(i){
+  dat0 <- gen(i, 2000, 0.5, 0.2, cenrate = 0)
+  risk0 <- est_risk(dat0)
+ 
+  dat20 <- gen(i, 2000, 0.5, 0.2, cenrate = .20)
+  risk20 <- est_risk(dat20)
+ 
+  dat80 <- gen(i, 2000, 0.5, 0.2, cenrate = .80)
+  risk80 <- est_risk(dat80)
+ 
+  return(c(risk0, risk20, risk80))
+}
+
+J <- 1000
+risks <- matrix(nrow = J, ncol = 3)
+for(i in 1:J){
+  if(i %% 100 == 0) print(i)
+  risks[i,] <- wraprisk(i)
+}
+
+
+res <- colMeans(risks)
+names(res) <- c("No censoring", "20% censoring", "80% censoring")
+res
+
+# results reproduced here
+# No censoring 20% censoring 80% censoring 
+# 0.1000840     0.1001554     0.0999860 
+
+# sample plot 
+dat0 <- gen(i, 10000, 0.5, 0.2, cenrate = 0)
+data <- dat0
+preg_mod <- survfit(Surv(t, j) ~ 1, data = data)
+smod_preg <- summary(preg_mod)
+resdat_preg <- data.frame(time = smod_preg$time, risk = 1 - smod_preg$surv) %>% 
+  add_row(time = 4.75, risk = 1 - tail(smod_preg$surv, n=1))
+
+mod <- survfit(Surv(t_pend, factor(j_birth)) ~ 1, data = data)
+smod <- summary(mod)
+resdat <- data.frame(time = smod$time, risk_loss = smod$pstate[,2], 
+                     risk_lb = smod$pstate[,3])
+resdat_all <- merge(resdat, resdat_preg, by = "time", all = T) %>%
+  fill(risk, risk_loss, risk_lb, .direction = "down") 
+
+plot <- ggplot() +
+  geom_step(aes(x = time, y = risk), data = resdat_preg, color = "steelblue") +
+  geom_step(aes(x = time, y = risk_loss + risk_lb), data = resdat, color = "darkred") +
+  geom_step(aes(x = time, y = risk_lb ), data = resdat) +
+  geom_ribbon(aes(x = time, ymin = 0, ymax = risk_lb), data = resdat, fill = "grey", 
+              alpha = 0.2) +
+  geom_ribbon(aes(x = time, ymin = risk_lb, ymax = risk_loss + risk_lb), data = resdat, 
+              fill = "darkred", 
+              alpha = 0.2) +
+  geom_ribbon(aes(x = time, ymin = risk_loss + risk_lb, ymax = risk), data = resdat_all, 
+              fill = "steelblue", 
+              alpha = 0.2) +
+  annotate("text",x = 1, y = 0.45, label = "Not pregnant yet")+
+  annotate("text",x = 3.5, y = 0.05, label = "Had live birth")+
+  annotate("text",x = 4, y = 0.33, label = "Loss", angle = 55)+
+  annotate("text",x = 2.5, y = 0.2, label = "Pregnant", angle = 55)+
+  xlim(0, 5)
+
+ggsave(plot, file = "/Users/jkedwar/BoxSync/Research/HIVmeths/side/pregplot.png", width =10, height = 10,  units = "cm")
 
 
 ```
