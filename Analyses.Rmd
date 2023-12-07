@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(survival)
 ```
 
 # Description
@@ -39,7 +40,20 @@ dataset <- readRDS(data, file = data_read)
 
 
 trial <- dataset %>% 
-  subset(trial_participant == TRUE)
+  subset(trial_participant == TRUE) %>% 
+  # Identify the observed outcomes
+  mutate(preg_outcome_final = ifelse(trt == 1,
+                                     preg_outcome_final_trt,
+                                     preg_outcome_final_untrt),
+         preg_outcome_final_gw = ifelse(trt == 1,
+                                        preg_outcome_final_gw_trt,
+                                        preg_outcome_final_gw_untrt),
+         preeclampsia = ifelse(trt == 1,
+                               preeclampsia_trt,
+                               preeclampsia_untrt),
+         sga = ifelse(trt == 1,
+                      sga_trt,
+                      sga_untrt))
 
 ```
 
@@ -91,9 +105,14 @@ Figural description of the distribution of pregnancy outcomes, facet wrapped by 
 ```{r}
 
 trial %>% 
+  mutate(trt_label = factor(trt, labels = c("Treatment = 0", "Treatment = 1"))) %>% 
   ggplot(aes(x = first_index)) +
   geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
-  facet_grid(facets = trt ~.)
+  facet_wrap(~trt_label, scales = "free") +
+  ylim(0, 200) +  # Set the y-axis limit to 0 to 200
+  xlim(4, 20) +
+  xlab("Gestational Week at Index") +  # Set the x-axis label
+  ylab("Count")
 
 ```
 
@@ -123,7 +142,8 @@ trial %>%
             p25 = quantile(preg_outcome_final_gw, 0.25),
             median = median(preg_outcome_final_gw),
             p75 = quantile (preg_outcome_final_gw, 0.75),
-            max = max(preg_outcome_final_gw)
+            max = max(preg_outcome_final_gw),
+            .groups = 'keep'
             )
 
 ```
@@ -133,9 +153,13 @@ Figural description of the distribution of pregnancy outcomes, facet wrapped by 
 ```{r}
 
 trial %>% 
+  mutate(trt_label = factor(trt, labels = c("Treatment = 0", "Treatment = 1"))) %>% 
   ggplot(aes(x = preg_outcome_final_gw, color = preg_outcome_final, fill = preg_outcome_final)) +
   geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
-  facet_grid(facets = trt ~.)
+  facet_grid(facets = trt_label ~.) +
+  xlab("Gestational Week at Pregnancy Outcome") +
+  ylab("Count") +
+  labs(fill = "Pregnancy Outcome") 
 
 ```
 
@@ -155,4 +179,68 @@ trial %>%
 ```
 
 # Conduct Analyses
+
+## Composite Preeclampsia and Fetal Death
+
+```{r}
+
+## Create the composite outcome
+trial2 <- trial %>% 
+  mutate(composite = ifelse(preg_outcome_final == "fetaldeath" || preeclampsia == 1,
+                            1,
+                            0))
+
+## Run the KM analysis only considering the composite outcome.
+km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
+#summary(km)
+
+wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, 
+                        trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+riskplot <- ggplot() +
+  geom_step(data = wrisk, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
+  xlab("Weeks")+
+  ylab("Risk") +
+  scale_color_discrete(labels = c("Treated", "Untreated"))+
+ # scale_y_continuous(limits = c(0, 0.55), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5))+
+  #scale_x_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8,10, 12))+
+  theme_classic(base_size = 15)+
+  theme(legend.position = c(0.28, 0.9), legend.title = element_blank(),
+        legend.background = element_rect(fill="transparent"), 
+        panel.background = element_rect(fill = NA), 
+        panel.grid.major = element_line(colour = "gray", linetype = "dotted"))
+
+riskplot
+
+ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+
+
+#get rr
+rr <- wrisk %>% 
+  group_by(trt) %>% 
+  summarize(risk = last(r)) %>% 
+  mutate(rr = risk/lag(risk, default =NA)) %>% 
+  filter(rr == last(rr)) %>% select(rr) %>% unlist()
+rr
+
+
+## Run the competing events analysis
+## -- We haven't introduced censoring right now, so there are only two possible outcomes:
+## -- fetal death or live birth.
+
+#jitter ties
+trial2 <- trial2 %>% 
+  group_by(preg_outcome_final_gw) %>% 
+  add_tally() %>% 
+  ungroup() %>% 
+  mutate(
+    jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
+    preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw))
+
+
+
+```
+
+## SGA
+
+## Preterm live birth
 
