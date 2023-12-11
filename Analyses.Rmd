@@ -246,7 +246,7 @@ km_rr_wCI <- function(data, t_val){
            selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
            lcl = exp(log(rr) - 1.96*selnrr),
            ucl = exp(log(rr) + 1.96*selnrr)) %>% 
-    select(rr, lcl, ucl)
+    select(r_0, r_1, rr, lcl, ucl)
   
   return(estimate)
   
@@ -310,6 +310,20 @@ km_rr_wCI(wrisk, 41)
 
 # 42 weeks
 km_rr_wCI(wrisk, 42)
+
+
+## Hand calculate at 42 weeks
+## This is a closed cohort without LTFU, this should be correct
+## -- regardless of AJ estimator.
+## -- Would be interesting to look at the differences in their risk estimates.
+trial2 %>% 
+  group_by(trt) %>% 
+  summarize(count = sum(composite == 1),
+            percent = round(count / n() * 100,2),
+            .groups = 'drop') 
+log(0.3659/0.4766) - log(0.4268/0.5995)
+
+
 
 ```
 
@@ -498,6 +512,18 @@ km_rr_wCI(wrisk, 41)
 
 # 42 weeks
 km_rr_wCI(wrisk, 42)
+
+## Hand calculate at 42 weeks
+## This is a closed cohort without LTFU, this should be correct
+## -- regardless of AJ estimator.
+## -- Would be interesting to look at the differences in their risk estimates.
+trial %>% 
+  group_by(trt) %>% 
+  summarize(count = sum(sga == 1),
+            percent = round(count / n() * 100,2),
+            .groups = 'drop') 
+log(0.1117/0.1170) - log(0.2986/0.3566)
+
 
 ```
 
