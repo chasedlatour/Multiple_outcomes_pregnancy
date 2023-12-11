@@ -181,51 +181,56 @@ trial %>%
 
 # Conduct Analyses
 
-## Composite Preeclampsia and Fetal Death
+## KM Estimator Functions
 
-### KM Estimator
-
-Output the cumulative incidence curves at the end of follow-up.
+Write out a function that will use the Kaplan-Meier estimator to estimate risk.
 
 ```{r}
 
-## Create the composite outcome
-trial2 <- trial %>% 
-  mutate(composite = ifelse(preg_outcome_final == "fetaldeath" || preeclampsia == 1,
-                            1,
-                            0))
-
-## Run the KM analysis only considering the composite outcome.
-km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
-#summary(km)
-
-wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
-                        trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
-
-
-riskplot <- ggplot() +
-  geom_step(data = wrisk, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
-  xlab("Weeks")+
-  ylab("Risk") +
-  scale_color_discrete(labels = c("Treated", "Untreated"))+
- # scale_y_continuous(limits = c(0, 0.55), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5))+
-  #scale_x_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8,10, 12))+
-  theme_classic(base_size = 15)+
-  theme(legend.position = c(0.28, 0.9), legend.title = element_blank(),
-        legend.background = element_rect(fill="transparent"), 
-        panel.background = element_rect(fill = NA), 
-        panel.grid.major = element_line(colour = "gray", linetype = "dotted")) #+
-  #title("Kaplan-Meier Cumulative Incidence Curves for Composite Outcome")
-
-riskplot
-
-#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+km_estimator <- function(dataset, outcome_var){
+  
+  ## Run the KM analysis only considering the composite outcome.
+  km <- survfit(Surv(preg_outcome_final_gw, get(outcome_var)) ~ trt, data = dataset)
+  #summary(km)
+  
+  wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
+                          trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+  
+  return(wrisk)
+  
+}
 
 ```
 
-Output the risk ratio at the end of follow-up.
+Write out a function that will plot the KM curve.
 
 ```{r}
+
+km_plot <- function(dataset, plot_title){
+  riskplot <- ggplot() +
+    geom_step(data = dataset, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
+    xlab("Weeks")+
+    ylab("Risk") +
+    scale_color_discrete(labels = c("Treated", "Untreated"))+
+    ggtitle(plot_title) +  # Add the title parameter
+   # scale_y_continuous(limits = c(0, 0.55), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5))+
+    #scale_x_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8,10, 12))+
+    theme_classic(base_size = 15)+
+    theme(legend.position = c(0.28, 0.9), legend.title = element_blank(),
+          legend.background = element_rect(fill="transparent"), 
+          panel.background = element_rect(fill = NA), 
+          panel.grid.major = element_line(colour = "gray", linetype = "dotted")) 
+  
+  return(riskplot)
+}
+
+
+```
+
+Write out a function to get the Risk Ratio at different points in follow-up
+
+```{r, collapse=TRUE}
+
 
 # Function to get the risk ratio with the corresponding confidence interval
 km_rr_wCI <- function(data, t_val){
@@ -247,6 +252,45 @@ km_rr_wCI <- function(data, t_val){
   
 }
 
+```
+
+## AJ Estimator Functions
+
+## Composite Preeclampsia and Fetal Death
+
+### KM Estimator
+
+Output the cumulative incidence curves at the end of follow-up.
+
+```{r}
+
+## Create the composite outcome
+trial2 <- trial %>% 
+  mutate(composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1,
+                            1,
+                            0))
+
+## Run the KM analysis only considering the composite outcome.
+wrisk <- km_estimator(trial2, "composite")
+
+
+# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
+# #summary(km)
+# 
+# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
+#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+
+riskplot <- km_plot(wrisk, "KM Estimator of Risk for Composite Outcome")
+
+riskplot
+
+#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+
+```
+
+Output the risk ratio at the end of follow-up.
+
+```{r}
 
 #############################################################################################
 ## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
@@ -267,23 +311,6 @@ km_rr_wCI(wrisk, 41)
 # 42 weeks
 km_rr_wCI(wrisk, 42)
 
-
-
-# wrisk %>% 
-#   filter(t == 41) %>% 
-#   select(r,se,trt) %>% 
-#   pivot_wider(names_from = trt,
-#               values_from = c(r, se),
-#               names_glue = "{.value}_{trt}") %>% 
-#   rowwise() %>% 
-#   mutate(rr = r_1 / r_0,
-#          selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
-#          lcl = exp(log(rr) - 1.96*selnrr),
-#          ucl = exp(log(rr) + 1.96*selnrr)) %>% 
-#   select(rr, selnrr, lcl, ucl)
-  
-
-
 ```
 
 ### AJ Estimator
@@ -303,6 +330,26 @@ trial2 <- trial2 %>%
     jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
     preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw))
 
+
+mod <- summary(survfit(Surv(t, factor(delta)) ~ bshiv, data = dat_bmacs2), times = 3000)
+ 
+summod <- data.frame(r = mod$pstate[,2], se = mod$std.err[,2], hiv = c(0,1)) %>%
+  pivot_wider(names_from=hiv, values_from = c(r, se)) %>%
+  mutate(rr = r_1/r_0,
+         rd = r_1 - r_0,
+         # use delta method to get 95% CI
+         logRR = log(rr),
+         var_1 = se_1^2,
+         var_0 = se_0^2,
+         var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
+         logRR_lower = logRR - 1.96*sqrt(var_logRR),
+         logRR_upper = logRR + 1.96*sqrt(var_logRR),
+         RR_lower = exp(logRR_lower),
+         RR_upper = exp(logRR_upper),
+         se_rd = sqrt(se_1^2 + se_0^2),
+         RD_lower = rd - 1.96*se_rd,
+         RD_upper = rd + 1.96*se_rd) %>%
+  select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
 
 
 
@@ -399,5 +446,119 @@ ggsave(plot, file = "/Users/jkedwar/BoxSync/Research/HIVmeths/side/pregplot.png"
 
 ## SGA
 
+### KM Estimator
+
+Output the cumulative incidence curves at the end of follow-up.
+
+```{r}
+
+## Create the composite outcome
+# trial2 <- trial %>% 
+#   mutate(composite = ifelse(preg_outcome_final == "fetaldeath" || preeclampsia == 1,
+#                             1,
+#                             0))
+
+## Run the KM analysis only considering the composite outcome.
+wrisk <- km_estimator(trial, "sga")
+
+
+# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
+# #summary(km)
+# 
+# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
+#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+
+riskplot <- km_plot(wrisk, "KM Estimator of Risk for SGA")
+
+riskplot
+
+#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+
+```
+
+Output the risk ratio at the end of follow-up.
+
+```{r}
+
+#############################################################################################
+## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
+## -- ASK JESS about this.
+## -- Funky thing: The standard errors get substantially larger as the weeks progress.
+## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
+## -- Need to check this intuition with Jess.
+
+# Get it at 39 weeks
+km_rr_wCI(wrisk, 39)
+
+# 40 weeks
+km_rr_wCI(wrisk, 40)
+
+# 41 weeks
+km_rr_wCI(wrisk, 41)
+
+# 42 weeks
+km_rr_wCI(wrisk, 42)
+
+```
+
+
+### AJ Estimator
+
 ## Preterm live birth
+
+Output the cumulative incidence curves at the end of follow-up.
+
+```{r}
+
+## Create the composite outcome
+trial2 <- trial %>% 
+  mutate(preterm = ifelse(preg_outcome_final == "livebirth" & preg_outcome_final_gw < 37,
+                          1,
+                          0))
+
+## Run the KM analysis only considering the composite outcome.
+wrisk <- km_estimator(trial2, "preterm")
+
+
+# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
+# #summary(km)
+# 
+# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
+#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+
+riskplot <- km_plot(wrisk, "KM Estimator of Risk for Preterm Live Birth")
+
+riskplot
+
+#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
+
+```
+
+Output the risk ratio at the end of follow-up.
+
+```{r}
+
+#############################################################################################
+## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
+## -- ASK JESS about this.
+## -- Funky thing: The standard errors get substantially larger as the weeks progress.
+## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
+## -- Need to check this intuition with Jess.
+
+# Get it at 37 weeks
+km_rr_wCI(wrisk, 37)
+
+# Get it at 39 weeks
+km_rr_wCI(wrisk, 39)
+
+# 40 weeks
+km_rr_wCI(wrisk, 40)
+
+# 41 weeks
+km_rr_wCI(wrisk, 41)
+
+# 42 weeks
+km_rr_wCI(wrisk, 42)
+
+```
 
