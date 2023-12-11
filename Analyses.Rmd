@@ -199,8 +199,10 @@ trial2 <- trial %>%
 km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
 #summary(km)
 
-wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, sd = km$std.err,
+wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
+
+
 riskplot <- ggplot() +
   geom_step(data = wrisk, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
   xlab("Weeks")+
@@ -225,23 +227,68 @@ Output the risk ratio at the end of follow-up.
 
 ```{r}
 
+# Function to get the risk ratio with the corresponding confidence interval
+km_rr_wCI <- function(data, t_val){
+  
+  estimate <- data %>% 
+    filter(t == t_val) %>% 
+    select(r,se,trt) %>% 
+    pivot_wider(names_from = trt,
+                values_from = c(r, se),
+                names_glue = "{.value}_{trt}") %>% 
+    rowwise() %>% 
+    mutate(rr = r_1 / r_0,
+           selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+           lcl = exp(log(rr) - 1.96*selnrr),
+           ucl = exp(log(rr) + 1.96*selnrr)) %>% 
+    select(rr, lcl, ucl)
+  
+  return(estimate)
+  
+}
 
-#get rr
-rr <- wrisk %>% 
-  group_by(trt) %>% 
-  summarize(risk = last(r)) %>% 
-  mutate(rr = risk/lag(risk, default =NA)) %>% 
-  filter(rr == last(rr)) %>% select(rr) %>% unlist()
-rr
 
-# Need to write the code to get the 95% CI
+#############################################################################################
+## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
+## -- ASK JESS about this.
+## -- Funky thing: The standard errors get substantially larger as the weeks progress.
+## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
+## -- Need to check this intuition with Jess.
+
+# Get it at 39 weeks
+km_rr_wCI(wrisk, 39)
+
+# 40 weeks
+km_rr_wCI(wrisk, 40)
+
+# 41 weeks
+km_rr_wCI(wrisk, 41)
+
+# 42 weeks
+km_rr_wCI(wrisk, 42)
+
+
+
+# wrisk %>% 
+#   filter(t == 41) %>% 
+#   select(r,se,trt) %>% 
+#   pivot_wider(names_from = trt,
+#               values_from = c(r, se),
+#               names_glue = "{.value}_{trt}") %>% 
+#   rowwise() %>% 
+#   mutate(rr = r_1 / r_0,
+#          selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+#          lcl = exp(log(rr) - 1.96*selnrr),
+#          ucl = exp(log(rr) + 1.96*selnrr)) %>% 
+#   select(rr, selnrr, lcl, ucl)
+  
 
 
 ```
 
 ### AJ Estimator
 
-```{r}
+```{r, eval=FALSE}
 
 ## Run the competing events analysis
 ## -- We haven't introduced censoring right now, so there are only two possible outcomes:
