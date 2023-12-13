@@ -265,6 +265,7 @@ Output the cumulative incidence curves at the end of follow-up.
 ```{r}
 
 ## Create the composite outcome
+set.seed(1234) # Set seed so that censoring is the same
 trial2 <- trial %>% 
   mutate(composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1,
                             1,
@@ -336,13 +337,76 @@ log(0.3659/0.4766) - log(0.4268/0.5995)
 ## -- fetal death or live birth.
 
 #jitter ties
-trial2 <- trial2 %>% 
+set.seed(1234) # Set seed so that censoring is the same
+trial2 <- trial %>% 
   group_by(preg_outcome_final_gw) %>% 
   add_tally() %>% 
   ungroup() %>% 
   mutate(
+    # Create censoring
+    censor = rbinom(nrow(trial2), size=1, 0.05),
+    # Jitter event times
     jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
-    preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw))
+    preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw),
+    # Make a multi-level outcome - should be adaptable to censoring in the future (i.e., 0, 1, or 2)
+    composite_multi = case_when(censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
+                                censor == 0 & preeclampsia == 1 ~ 1,
+                                censor == 0 & preg_outcome_final == "livebirth" & preeclampsia == 0 ~ 2,
+                                censor == 1 ~ 0)
+    )
+
+# Run the AJ model
+aj <- survfit(Surv(preg_outcome_final_gw, factor(composite_multi)) ~ trt, data = trial2)
+
+mod <- summary(aj)
+
+summod <- data.frame(t = mod$time,
+                     r = mod$pstate[,2], 
+                     se = mod$std.err[,2],
+                     # This is not right yet
+                     #trt = c(rep(0, mod$strata["trt=0"]), rep(1, mod$strata["trt=1"]))
+                     trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
+                                 rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
+                     ) %>%
+  group_by(trt) %>% 
+  summarize(r = last(r),
+            se = last(se),
+            .groups = 'drop') %>% 
+  select(r,se,trt) %>% 
+    pivot_wider(names_from = trt,
+                values_from = c(r, se),
+                names_glue = "{.value}_{trt}") %>% 
+    rowwise() %>% 
+    mutate(rr = r_1 / r_0 #,
+           #selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+           #lcl = exp(log(rr) - 1.96*selnrr),
+           #ucl = exp(log(rr) + 1.96*selnrr)
+           ) %>% 
+    select(r_0, r_1, rr
+           #, lcl, ucl
+           )
+            
+
+
+
+  pivot_wider(names_from=trt, values_from = c(r, se)) %>%
+  mutate(rr = r_1/r_0,
+         rd = r_1 - r_0,
+         # use delta method to get 95% CI
+         logRR = log(rr),
+         var_1 = se_1^2,
+         var_0 = se_0^2,
+         var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
+         logRR_lower = logRR - 1.96*sqrt(var_logRR),
+         logRR_upper = logRR + 1.96*sqrt(var_logRR),
+         RR_lower = exp(logRR_lower),
+         RR_upper = exp(logRR_upper),
+         se_rd = sqrt(se_1^2 + se_0^2),
+         RD_lower = rd - 1.96*se_rd,
+         RD_upper = rd + 1.96*se_rd) %>%
+  select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
+
+
 
 
 mod <- summary(survfit(Surv(t, factor(delta)) ~ bshiv, data = dat_bmacs2), times = 3000)
