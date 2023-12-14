@@ -192,9 +192,11 @@ trial %>%
 
 # Conduct Analyses
 
-## KM Estimator Functions
+## Write Functions
 
-Write out a function that will use the Kaplan-Meier estimator to estimate risk.
+### KM Estimator
+
+Code for function that uses the Kaplan-Meier estimator to estimate risk.
 
 ```{r}
 
@@ -213,7 +215,7 @@ km_estimator <- function(dataset, outcome_var, outcome_var_t){
 
 ```
 
-Write out a function that will plot the KM curve.
+Code for function that plots the KM curve.
 
 ```{r}
 
@@ -238,7 +240,7 @@ km_plot <- function(dataset, plot_title){
 
 ```
 
-Write out a function to get the Risk Ratio at different points in follow-up
+Code for function to get the Risk Ratio at different points in follow-up.
 
 ```{r, collapse=TRUE}
 
@@ -281,9 +283,9 @@ km_rr_wCI <- function(data, t_val){
 
 ```
 
-## AJ Estimator Functions
+### AJ Estimator
 
-Write a function that generates the AJ estimator object.
+Code for function that generates the AJ estimator object.
 
 ```{r}
 
@@ -311,10 +313,10 @@ aj_estimator <- function(dataset, outcome_var, outcome_var_t){
 
 ```
 
-Write a function that generates RRs from the AJ estimator.
+Code for function that generates RRs from the AJ estimator.
 
 ```{r}
-#ASK JESS ABOUT t_val
+#ASK JESS ABOUT t_val specification
 
 aj_rr <- function(aj_object, t_val){
   
@@ -363,9 +365,7 @@ aj_rr <- function(aj_object, t_val){
 
 ```
 
-Write a function that plots the AJ object.
-
-This still needs some work to be sure that it's outputting everything correctly.
+Code for function that plots the AJ object. **This still needs some work to be sure that it's outputting everything correctly.**
 
 ```{r}
 
@@ -396,7 +396,9 @@ aj_plot <- function(aj_object, xlab="Gestational weeks post-conception", ylab="P
 
 ```
 
-## Function to Summarize Bias
+## Summarize Bias
+
+Code for function that summarizes the bias between KM and AJ estimators.
 
 ```{r}
 
@@ -466,13 +468,6 @@ trial2 <- trial %>%
 ## Run the KM analysis only considering the composite outcome.
 wrisk <- km_estimator(trial2, "composite","composite_gw")
 
-
-# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
-# #summary(km)
-# 
-# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
-#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
-
 riskplot <- km_plot(wrisk, "KM Estimator of Risk for Composite Outcome")
 
 riskplot
@@ -489,24 +484,14 @@ Output the risk ratio at the end of follow-up.
 ## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
 ## -- ASK JESS about this.
 ## -- Funky thing: The standard errors get substantially larger as the weeks progress.
-## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
+## -- Likely because there are fewer and fewer individuals at risk at 42 weeks and imputing
+## -- more censoring.
 ## -- Need to check this intuition with Jess.
 
 # 42 weeks post-LMP, or 40 weeks post-conception (end of follow-up)
 km_rr42 <- km_rr_wCI(wrisk, 42)
 
 # km_rr42
-
-## Hand calculate at 42 weeks
-## This is a closed cohort without LTFU, this should be correct
-## -- regardless of AJ estimator.
-## -- Would be interesting to look at the differences in their risk estimates.
-# trial2 %>% 
-#   group_by(trt) %>% 
-#   summarize(count = sum(composite == 1),
-#             percent = round(count / n() * 100,2),
-#             .groups = 'drop') 
-# log(0.3659/0.4766) - log(0.4268/0.5995)
 
 ```
 
