@@ -2,7 +2,9 @@
 title: "Analyses"
 author: "Chase Latour"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -11,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(survival)
 library(Epi)
+library(kableExtra)
 ```
 
 # Description
@@ -23,7 +26,7 @@ Describe the patient cohort. This will allow us to check for weird data issues.
 
 ## Read in the data
 
-```{r}
+```{r, collapse=T}
 
 # Get the directory where the Rmd file is located
 rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -250,17 +253,31 @@ km_rr_wCI <- function(data, t_val){
                 values_from = c(r, se),
                 names_glue = "{.value}_{trt}") %>% 
     rowwise() %>% 
-    mutate(rr = r_1 / r_0,
-           selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
-           lcl = exp(log(rr) - 1.96*selnrr),
-           ucl = exp(log(rr) + 1.96*selnrr)) %>% 
-    select(r_0, r_1, rr, lcl, ucl)
+    mutate(rr = r_1/r_0,
+           rd = r_1 - r_0,
+           # use delta method to get 95% CI
+           logRR = log(rr),
+           var_1 = se_1^2,
+           var_0 = se_0^2,
+           var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
+           logRR_lower = logRR - 1.96*sqrt(var_logRR),
+           logRR_upper = logRR + 1.96*sqrt(var_logRR),
+           RR_lower = exp(logRR_lower),
+           RR_upper = exp(logRR_upper),
+           se_rd = sqrt(se_1^2 + se_0^2),
+           RD_lower = rd - 1.96*se_rd,
+           RD_upper = rd + 1.96*se_rd,
+           Estimator = "Kaplan-Meier") %>%
+    select(Estimator, r_0, r_1, rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
+    # mutate(rr = r_1 / r_0,
+    #        selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+    #        lcl = exp(log(rr) - 1.96*selnrr),
+    #        ucl = exp(log(rr) + 1.96*selnrr)) %>% 
+    # select(r_0, r_1, rr, lcl, ucl)
   
   return(estimate)
   
 }
-
-#CHECK SE ESTIMATE FOR KM RR
 
 ```
 
@@ -273,7 +290,8 @@ Write a function that generates the AJ estimator object.
 aj_estimator <- function(dataset, outcome_var, outcome_var_t){
   
   #jitter ties
-  set.seed(1234) # Set seed so that censoring is the same
+  #set.seed(1234)
+  # Not sure if should set seed for jittering outcomes
   dataset2 <- dataset %>% 
     group_by(get(outcome_var_t)) %>% 
     add_tally() %>% 
@@ -296,8 +314,9 @@ aj_estimator <- function(dataset, outcome_var, outcome_var_t){
 Write a function that generates RRs from the AJ estimator.
 
 ```{r}
+#ASK JESS ABOUT t_val
 
-aj_rr <- function(aj_object){
+aj_rr <- function(aj_object, t_val){
   
   mod <- summary(aj_object)
 
@@ -309,6 +328,7 @@ aj_rr <- function(aj_object){
                        trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
                                    rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
                        ) %>%
+    filter(t < t_val+0.5) %>%  # Deal with the jittering of outcomes
     group_by(trt) %>% 
     summarize(r = last(r),
               se = last(se),
@@ -331,8 +351,9 @@ aj_rr <- function(aj_object){
            RR_upper = exp(logRR_upper),
            se_rd = sqrt(se_1^2 + se_0^2),
            RD_lower = rd - 1.96*se_rd,
-           RD_upper = rd + 1.96*se_rd) %>%
-    select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
+           RD_upper = rd + 1.96*se_rd,
+           Estimator = "Aalen-Johansen") %>%
+    select(Estimator, r_0, r_1, rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
   
   return(summod)
     
@@ -365,9 +386,6 @@ aj_plot <- function(aj_object, xlab="Gestational weeks post-conception", ylab="P
 #aj_plot(test, outcome = "Composite", competing = "Delivery")
 
 
-
-
-
 ## VERY HELPFUL: https://cran.r-project.org/web/packages/survival/vignettes/compete.pdf
 
 ## Plotting AJ estimators:
@@ -376,14 +394,55 @@ aj_plot <- function(aj_object, xlab="Gestational weeks post-conception", ylab="P
 ## More AJ R code:
 #https://cran.r-project.org/web/packages/AalenJohansen/index.html
 
+```
 
+## Function to Summarize Bias
 
+```{r}
 
+compare <- function(km, aj){
+  
+  # Calculate the differences
+  differences <- tibble(
+      # Absolute Risks
+      r_0 = km$r_0 - aj$r_0,
+      r_1 = km$r_1 - aj$r_1,
+      # Risk Ratios
+      rr = log(km$rr) - log(aj$rr),
+      RR_lower = log(km$RR_lower) - log(aj$RR_lower),
+      RR_upper = log(km$RR_upper) - log(aj$RR_upper),
+      # Risk differences
+      rd = km$rd - aj_rrs_composite$rd,
+      RD_lower = km$RD_lower - aj$RD_lower,
+      RD_upper = km$RD_upper - aj$RD_upper,
+      Estimator = "Differences: KM-AJ"
+  )
+  
+  # Make the kable object
+  kable_object <- rbind(km, aj) %>% 
+    rbind(differences) %>% 
+    ungroup() %>% 
+    mutate(r_0 = round(r_0, 2),
+           r_1 = round(r_1, 2),
+           rr = round(rr, 2),
+           RR_lower = round(RR_lower, 2),
+           RR_upper = round(RR_upper, 2),
+           rd = round(rd, 2),
+           RD_lower = round(RD_lower, 2),
+           RD_upper = round(RD_upper, 2)) %>% 
+    #kbl() %>% 
+    kable(col.names = c("Estimator", "Risk Among Untreated", "Risk Among Treated","RR", "RR 95% LCL",
+                        "RR 95% UCL", "RD", "RD 95% LCL", "RD 95% UCL"),
+          align = "lcccccccc") %>% 
+    kable_classic() %>% 
+    row_spec(3, bold = T, color = "white", background = "black")
+  
+  return(kable_object)
+  
+}
 
 
 ```
-
-###
 
 ## Composite Preeclampsia and Fetal Death
 
@@ -394,7 +453,6 @@ Output the cumulative incidence curves at the end of follow-up.
 ```{r}
 
 ## Create the composite outcome
-set.seed(1234) # Set seed so that censoring is the same
 trial2 <- trial %>% 
   mutate(composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1 & 
                               (is.na(first_censoring_gw) | preg_outcome_final_gw < first_censoring_gw),
@@ -434,31 +492,21 @@ Output the risk ratio at the end of follow-up.
 ## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
 ## -- Need to check this intuition with Jess.
 
-# Get it at 39 weeks
-# km_rr_wCI(wrisk, 39)
+# 42 weeks post-LMP, or 40 weeks post-conception (end of follow-up)
+km_rr42 <- km_rr_wCI(wrisk, 42)
 
-# 40 weeks
-# km_rr_wCI(wrisk, 40)
-
-# 41 weeks
-# km_rr_wCI(wrisk, 41)
-
-# 42 weeks post-LMP, or 40 weeks post-conception
-km_rr_wCI(wrisk, 42)
-
+# km_rr42
 
 ## Hand calculate at 42 weeks
 ## This is a closed cohort without LTFU, this should be correct
 ## -- regardless of AJ estimator.
 ## -- Would be interesting to look at the differences in their risk estimates.
-trial2 %>% 
-  group_by(trt) %>% 
-  summarize(count = sum(composite == 1),
-            percent = round(count / n() * 100,2),
-            .groups = 'drop') 
-log(0.3659/0.4766) - log(0.4268/0.5995)
-
-
+# trial2 %>% 
+#   group_by(trt) %>% 
+#   summarize(count = sum(composite == 1),
+#             percent = round(count / n() * 100,2),
+#             .groups = 'drop') 
+# log(0.3659/0.4766) - log(0.4268/0.5995)
 
 ```
 
@@ -494,16 +542,21 @@ aj <- aj_estimator(trial2, "composite_multi", "composite_multi_gw")
 
 # Calculate the RRs
 
-aj_rrs_composite <- aj_rr(aj)
+aj_rrs_composite <- aj_rr(aj, 42)
 
-aj_rrs_composite
+# aj_rrs_composite
 
 # Print the plot
 
 aj_plot(aj_object = aj, outcome = "composite", competing = "delivery")
 
+```
 
+### Estimate the bias between KM and RR
 
+```{r}
+
+compare(km_rr42, aj_rrs_composite)
 
 ```
 
