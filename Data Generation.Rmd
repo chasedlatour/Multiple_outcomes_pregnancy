@@ -27,6 +27,7 @@ phase1 <- read_xlsx(excel_file, sheet = "Phase1")
 phase2 <- read_xlsx(excel_file, sheet = "Phase2")
 phase3 <- read_xlsx(excel_file, sheet = "Phase3")
 phase4 <- read_xlsx(excel_file, sheet = "Phase4")
+phase5 <- read_xlsx(excel_file, sheet = "Phase5")
 
 ```
 
@@ -119,11 +120,13 @@ each_sim <- function(n_sim, n){
       ## These are outcomes if all were treated (i.e., potential outcomes)
       sga_trt = sga_func(final_pregnancy_outcomes_trt, 1, phase4),
       ## These are outcomes if all were untreated (i.e., potential outcomes)
-      sga_untrt = sga_func(final_pregnancy_outcomes_trt, 0, phase4)
+      sga_untrt = sga_func(final_pregnancy_outcomes_trt, 0, phase4),
       #sga = sga_func(final_pregnancy_outcomes, trt, phase4)
       
       
       ##### PHASE 5 -- Censoring -- STILL NEED TO INCORPORATE THIS.
+      first_censoring_gw = censoring(phase5, first_index)
+      
 
       
     ) %>% 
@@ -345,6 +348,38 @@ sga_func <- function(final_pregnancy_outcomes, trt, phase4){
   return(sga)
 }
 
+
+# This function will determine censoring events based upon the probabilities 
+# -- recorded in phase5.
+censoring <- function(data, first_index){
+  
+  # Create a vector of the censoring probabilities
+  # -- Each element is a gestational week
+  prob_censoring <- data$p_censoring
+  
+  # Determine the length of prob_censoring for easy reference later
+  n <- length(prob_censoring)
+  
+  # Create a vector with the realized censoring events based
+  # -- upon the prob_censoring vecotr
+  censor <- rbinom(n, size = 1, prob=prob_censoring)
+  
+  # Determine the first_index - we are interested in the first censoring
+  # -- event after this index.
+  first_index2 <- first_index + 1
+  # We add one because first_index gw starts at 0, but R vectors start at 1.
+  
+  # Determine the gw of the first censoring event
+  first_censor <- which(censor[first_index2:n]==1)[1] - 1
+  # Subtract one to get back to gw indexed at 0 or conception
+  
+  # Return the gestational week of the first censoring event
+  # -- Note that this is independent of outcome generation and exposure
+  # -- Thus, uninformative.
+  return(first_censor)
+  
+}
+  
 
 ```
 
