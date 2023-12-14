@@ -56,6 +56,8 @@ trial <- dataset %>%
                       sga_trt,
                       sga_untrt))
 
+# Note that censoring is the same regardless of treatment.
+
 ```
 
 ## Number of trial participants
@@ -119,6 +121,8 @@ trial %>%
 
 ## Number of live births and fetal deaths across treatment groups
 
+Currently, these counts ignore censoring events.
+
 ```{r}
 
 trial %>% 
@@ -133,6 +137,8 @@ trial %>%
 ## Distribution of pregnancy outcomes
 
 Quantitative description of the distribution of pregnancy outcomes, by treatment group.
+
+Currently, these counts ignore censoring events.
 
 ```{r}
 
@@ -168,6 +174,8 @@ trial %>%
 
 By treatment group.
 
+Currently, these counts ignore censoring events.
+
 ```{r}
 
 trial %>% 
@@ -187,10 +195,10 @@ Write out a function that will use the Kaplan-Meier estimator to estimate risk.
 
 ```{r}
 
-km_estimator <- function(dataset, outcome_var){
+km_estimator <- function(dataset, outcome_var, outcome_var_t){
   
   ## Run the KM analysis only considering the composite outcome.
-  km <- survfit(Surv(preg_outcome_final_gw, get(outcome_var)) ~ trt, data = dataset)
+  km <- survfit(Surv(get(outcome_var_t), get(outcome_var)) ~ trt, data = dataset)
   #summary(km)
   
   wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
@@ -252,9 +260,130 @@ km_rr_wCI <- function(data, t_val){
   
 }
 
+#CHECK SE ESTIMATE FOR KM RR
+
 ```
 
 ## AJ Estimator Functions
+
+Write a function that generates the AJ estimator object.
+
+```{r}
+
+aj_estimator <- function(dataset, outcome_var, outcome_var_t){
+  
+  #jitter ties
+  set.seed(1234) # Set seed so that censoring is the same
+  dataset2 <- dataset %>% 
+    group_by(get(outcome_var_t)) %>% 
+    add_tally() %>% 
+    ungroup() %>% 
+    mutate(
+      # Jitter event times
+      jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
+      time = ifelse(n>1, get(outcome_var_t) + jitter, get(outcome_var_t))
+      )
+  
+  # Run the AJ model
+  aj <- survfit(Surv(time, factor(get(outcome_var))) ~ trt, data = dataset2)
+  
+}
+
+#test <- aj_estimator(trial2, "composite_multi", "composite_multi_gw")
+
+```
+
+Write a function that generates RRs from the AJ estimator.
+
+```{r}
+
+aj_rr <- function(aj_object){
+  
+  mod <- summary(aj_object)
+
+  summod <- data.frame(t = mod$time,
+                       r = mod$pstate[,2], 
+                       se = mod$std.err[,2],
+                       # This is not right yet
+                       #trt = c(rep(0, mod$strata["trt=0"]), rep(1, mod$strata["trt=1"]))
+                       trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
+                                   rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
+                       ) %>%
+    group_by(trt) %>% 
+    summarize(r = last(r),
+              se = last(se),
+              .groups = 'drop') %>% 
+    select(r,se,trt) %>% 
+      pivot_wider(names_from = trt,
+                  values_from = c(r, se),
+                  names_glue = "{.value}_{trt}") %>% 
+      rowwise() %>% 
+      mutate(rr = r_1/r_0,
+           rd = r_1 - r_0,
+           # use delta method to get 95% CI
+           logRR = log(rr),
+           var_1 = se_1^2,
+           var_0 = se_0^2,
+           var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
+           logRR_lower = logRR - 1.96*sqrt(var_logRR),
+           logRR_upper = logRR + 1.96*sqrt(var_logRR),
+           RR_lower = exp(logRR_lower),
+           RR_upper = exp(logRR_upper),
+           se_rd = sqrt(se_1^2 + se_0^2),
+           RD_lower = rd - 1.96*se_rd,
+           RD_upper = rd + 1.96*se_rd) %>%
+    select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
+  
+  return(summod)
+    
+}
+
+# aj_rr(test)
+
+```
+
+Write a function that plots the AJ object.
+
+This still needs some work to be sure that it's outputting everything correctly.
+
+```{r}
+
+aj_plot <- function(aj_object, xlab="Gestational weeks post-conception", ylab="Probability in State",
+                    outcome = "", competing = ""){
+  plot(aj_object, col=c(1,2,1,2), lty=c(2,2,1,1),
+       mark.time=FALSE, lwd=2,  xscale=12,
+       xlab=xlab, ylab=ylab)
+    legend("topleft", legend = c(paste(outcome, ":untreated"), paste(outcome, ":treated"), 
+                                 paste(competing, ":untreated"), paste(competing, ":treated")),
+         col = c(1, 2, 1, 2), lty = c(1, 1, 2, 2), lwd = 2, bty = 'n')
+
+  # legend(240, .6, c(paste(outcome, ":untreated"), paste(outcome, ":treated"), paste(competing, ":untreated"), paste(competing, ":treated")),
+  #        col = c(1, 2, 1, 2), lty = c(1, 1, 2, 2), lwd = 2, bty = 'n')
+
+}
+
+#aj_plot(test, outcome = "Composite", competing = "Delivery")
+
+
+
+
+
+## VERY HELPFUL: https://cran.r-project.org/web/packages/survival/vignettes/compete.pdf
+
+## Plotting AJ estimators:
+#https://search.r-project.org/CRAN/refmans/Epi/html/plotCIF.html
+
+## More AJ R code:
+#https://cran.r-project.org/web/packages/AalenJohansen/index.html
+
+
+
+
+
+
+```
+
+###
 
 ## Composite Preeclampsia and Fetal Death
 
@@ -267,12 +396,17 @@ Output the cumulative incidence curves at the end of follow-up.
 ## Create the composite outcome
 set.seed(1234) # Set seed so that censoring is the same
 trial2 <- trial %>% 
-  mutate(composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1,
+  mutate(composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1 & 
+                              (is.na(first_censoring_gw) | preg_outcome_final_gw < first_censoring_gw),
                             1,
-                            0))
+                            0),
+         composite_gw = ifelse(is.na(first_censoring_gw) | preg_outcome_final_gw < first_censoring_gw,
+                               preg_outcome_final_gw,
+                               first_censoring_gw)
+         )
 
 ## Run the KM analysis only considering the composite outcome.
-wrisk <- km_estimator(trial2, "composite")
+wrisk <- km_estimator(trial2, "composite","composite_gw")
 
 
 # km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
@@ -301,15 +435,15 @@ Output the risk ratio at the end of follow-up.
 ## -- Need to check this intuition with Jess.
 
 # Get it at 39 weeks
-km_rr_wCI(wrisk, 39)
+# km_rr_wCI(wrisk, 39)
 
 # 40 weeks
-km_rr_wCI(wrisk, 40)
+# km_rr_wCI(wrisk, 40)
 
 # 41 weeks
-km_rr_wCI(wrisk, 41)
+# km_rr_wCI(wrisk, 41)
 
-# 42 weeks
+# 42 weeks post-LMP, or 40 weeks post-conception
 km_rr_wCI(wrisk, 42)
 
 
@@ -330,325 +464,50 @@ log(0.3659/0.4766) - log(0.4268/0.5995)
 
 ### AJ Estimator
 
-```{r, eval=FALSE}
+```{r}
+
+## Make dataset the way that we want it
+trial2 <- trial %>% 
+  mutate(
+    # Make an indicator that the patient was censored before we observed their outcome
+    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+                    1,
+                    0),
+    # Make a multi-level outcome
+    composite_multi = case_when(censor == 1 ~ 0,
+                                censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
+                                censor == 0 & preeclampsia == 1 ~ 1,
+                                censor == 0 & preg_outcome_final == "livebirth" & preeclampsia == 0 ~ 2
+                                ),
+    # Make a gestational week variable for the composite_multi variable
+    composite_multi_gw = ifelse(censor == 1,
+                                first_censoring_gw,
+                                preg_outcome_final_gw)
+  )
+
 
 ## Run the competing events analysis
-## -- We haven't introduced censoring right now, so there are only two possible outcomes:
-## -- fetal death or live birth.
 
-#jitter ties
-set.seed(1234) # Set seed so that censoring is the same
-trial2 <- trial %>% 
-  group_by(preg_outcome_final_gw) %>% 
-  add_tally() %>% 
-  ungroup() %>% 
-  mutate(
-    # Create censoring
-    censor = rbinom(nrow(trial2), size=1, 0.05),
-    # Jitter event times
-    jitter = runif(nrow(trial2), min = -.01, max = .01), # N in the samp
-    preg_outcome_final_gw = ifelse(n>1, preg_outcome_final_gw + jitter, preg_outcome_final_gw),
-    # Make a multi-level outcome - should be adaptable to censoring in the future (i.e., 0, 1, or 2)
-    composite_multi = case_when(censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
-                                censor == 0 & preeclampsia == 1 ~ 1,
-                                censor == 0 & preg_outcome_final == "livebirth" & preeclampsia == 0 ~ 2,
-                                censor == 1 ~ 0)
-    )
+# Make the AJ object
 
-# Run the AJ model
-aj <- survfit(Surv(preg_outcome_final_gw, factor(composite_multi)) ~ trt, data = trial2)
+aj <- aj_estimator(trial2, "composite_multi", "composite_multi_gw")
 
-mod <- summary(aj)
+# Calculate the RRs
 
-summod <- data.frame(t = mod$time,
-                     r = mod$pstate[,2], 
-                     se = mod$std.err[,2],
-                     # This is not right yet
-                     #trt = c(rep(0, mod$strata["trt=0"]), rep(1, mod$strata["trt=1"]))
-                     trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
-                                 rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
-                     ) %>%
-  group_by(trt) %>% 
-  summarize(r = last(r),
-            se = last(se),
-            .groups = 'drop') %>% 
-  select(r,se,trt) %>% 
-    pivot_wider(names_from = trt,
-                values_from = c(r, se),
-                names_glue = "{.value}_{trt}") %>% 
-    rowwise() %>% 
-    mutate(rr = r_1 / r_0 #,
-           #selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
-           #lcl = exp(log(rr) - 1.96*selnrr),
-           #ucl = exp(log(rr) + 1.96*selnrr)
-           ) %>% 
-    select(r_0, r_1, rr
-           #, lcl, ucl
-           )
-            
+aj_rrs_composite <- aj_rr(aj)
+
+aj_rrs_composite
+
+# Print the plot
+
+aj_plot(aj_object = aj, outcome = "composite", competing = "delivery")
 
 
-
-  pivot_wider(names_from=trt, values_from = c(r, se)) %>%
-  mutate(rr = r_1/r_0,
-         rd = r_1 - r_0,
-         # use delta method to get 95% CI
-         logRR = log(rr),
-         var_1 = se_1^2,
-         var_0 = se_0^2,
-         var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
-         logRR_lower = logRR - 1.96*sqrt(var_logRR),
-         logRR_upper = logRR + 1.96*sqrt(var_logRR),
-         RR_lower = exp(logRR_lower),
-         RR_upper = exp(logRR_upper),
-         se_rd = sqrt(se_1^2 + se_0^2),
-         RD_lower = rd - 1.96*se_rd,
-         RD_upper = rd + 1.96*se_rd) %>%
-  select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
-
-
-
-
-mod <- summary(survfit(Surv(t, factor(delta)) ~ bshiv, data = dat_bmacs2), times = 3000)
- 
-summod <- data.frame(r = mod$pstate[,2], se = mod$std.err[,2], hiv = c(0,1)) %>%
-  pivot_wider(names_from=hiv, values_from = c(r, se)) %>%
-  mutate(rr = r_1/r_0,
-         rd = r_1 - r_0,
-         # use delta method to get 95% CI
-         logRR = log(rr),
-         var_1 = se_1^2,
-         var_0 = se_0^2,
-         var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
-         logRR_lower = logRR - 1.96*sqrt(var_logRR),
-         logRR_upper = logRR + 1.96*sqrt(var_logRR),
-         RR_lower = exp(logRR_lower),
-         RR_upper = exp(logRR_upper),
-         se_rd = sqrt(se_1^2 + se_0^2),
-         RD_lower = rd - 1.96*se_rd,
-         RD_upper = rd + 1.96*se_rd) %>%
-  select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
-
-
-
-## Plotting AJ estimators:
-#https://search.r-project.org/CRAN/refmans/Epi/html/plotCIF.html
-
-## More AJ R code:
-#https://cran.r-project.org/web/packages/AalenJohansen/index.html
-
-
-
-
-
-
-# Jess's original code
-
-
-#' a function to estimate risk of preg loss by end of follow-up
-#' 
-est_risk <- function(data){
-  mod <- survfit(Surv(t_pend, factor(j_birth)) ~ 1, data = data)
-  smod <- summary(mod)
-  resdat <- data.frame(time = smod$time, risk = smod$pstate[,2], risklb  = smod$pstate[,3])
-  return(resdat %>% slice(n()) %>% pull(risk))
-}
-
-
-wraprisk <- function(i){
-  dat0 <- gen(i, 2000, 0.5, 0.2, cenrate = 0)
-  risk0 <- est_risk(dat0)
- 
-  dat20 <- gen(i, 2000, 0.5, 0.2, cenrate = .20)
-  risk20 <- est_risk(dat20)
- 
-  dat80 <- gen(i, 2000, 0.5, 0.2, cenrate = .80)
-  risk80 <- est_risk(dat80)
- 
-  return(c(risk0, risk20, risk80))
-}
-
-J <- 1000
-risks <- matrix(nrow = J, ncol = 3)
-for(i in 1:J){
-  if(i %% 100 == 0) print(i)
-  risks[i,] <- wraprisk(i)
-}
-
-
-res <- colMeans(risks)
-names(res) <- c("No censoring", "20% censoring", "80% censoring")
-res
-
-# results reproduced here
-# No censoring 20% censoring 80% censoring 
-# 0.1000840     0.1001554     0.0999860 
-
-# sample plot 
-dat0 <- gen(i, 10000, 0.5, 0.2, cenrate = 0)
-data <- dat0
-preg_mod <- survfit(Surv(t, j) ~ 1, data = data)
-smod_preg <- summary(preg_mod)
-resdat_preg <- data.frame(time = smod_preg$time, risk = 1 - smod_preg$surv) %>% 
-  add_row(time = 4.75, risk = 1 - tail(smod_preg$surv, n=1))
-
-mod <- survfit(Surv(t_pend, factor(j_birth)) ~ 1, data = data)
-smod <- summary(mod)
-resdat <- data.frame(time = smod$time, risk_loss = smod$pstate[,2], 
-                     risk_lb = smod$pstate[,3])
-resdat_all <- merge(resdat, resdat_preg, by = "time", all = T) %>%
-  fill(risk, risk_loss, risk_lb, .direction = "down") 
-
-plot <- ggplot() +
-  geom_step(aes(x = time, y = risk), data = resdat_preg, color = "steelblue") +
-  geom_step(aes(x = time, y = risk_loss + risk_lb), data = resdat, color = "darkred") +
-  geom_step(aes(x = time, y = risk_lb ), data = resdat) +
-  geom_ribbon(aes(x = time, ymin = 0, ymax = risk_lb), data = resdat, fill = "grey", 
-              alpha = 0.2) +
-  geom_ribbon(aes(x = time, ymin = risk_lb, ymax = risk_loss + risk_lb), data = resdat, 
-              fill = "darkred", 
-              alpha = 0.2) +
-  geom_ribbon(aes(x = time, ymin = risk_loss + risk_lb, ymax = risk), data = resdat_all, 
-              fill = "steelblue", 
-              alpha = 0.2) +
-  annotate("text",x = 1, y = 0.45, label = "Not pregnant yet")+
-  annotate("text",x = 3.5, y = 0.05, label = "Had live birth")+
-  annotate("text",x = 4, y = 0.33, label = "Loss", angle = 55)+
-  annotate("text",x = 2.5, y = 0.2, label = "Pregnant", angle = 55)+
-  xlim(0, 5)
-
-ggsave(plot, file = "/Users/jkedwar/BoxSync/Research/HIVmeths/side/pregplot.png", width =10, height = 10,  units = "cm")
 
 
 ```
 
 ## SGA
 
-### KM Estimator
-
-Output the cumulative incidence curves at the end of follow-up.
-
-```{r}
-
-## Create the composite outcome
-# trial2 <- trial %>% 
-#   mutate(composite = ifelse(preg_outcome_final == "fetaldeath" || preeclampsia == 1,
-#                             1,
-#                             0))
-
-## Run the KM analysis only considering the composite outcome.
-wrisk <- km_estimator(trial, "sga")
-
-
-# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
-# #summary(km)
-# 
-# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
-#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
-
-riskplot <- km_plot(wrisk, "KM Estimator of Risk for SGA")
-
-riskplot
-
-#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
-
-```
-
-Output the risk ratio at the end of follow-up.
-
-```{r}
-
-#############################################################################################
-## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
-## -- ASK JESS about this.
-## -- Funky thing: The standard errors get substantially larger as the weeks progress.
-## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
-## -- Need to check this intuition with Jess.
-
-# Get it at 39 weeks
-km_rr_wCI(wrisk, 39)
-
-# 40 weeks
-km_rr_wCI(wrisk, 40)
-
-# 41 weeks
-km_rr_wCI(wrisk, 41)
-
-# 42 weeks
-km_rr_wCI(wrisk, 42)
-
-## Hand calculate at 42 weeks
-## This is a closed cohort without LTFU, this should be correct
-## -- regardless of AJ estimator.
-## -- Would be interesting to look at the differences in their risk estimates.
-trial %>% 
-  group_by(trt) %>% 
-  summarize(count = sum(sga == 1),
-            percent = round(count / n() * 100,2),
-            .groups = 'drop') 
-log(0.1117/0.1170) - log(0.2986/0.3566)
-
-
-```
-
-
-### AJ Estimator
-
 ## Preterm live birth
-
-Output the cumulative incidence curves at the end of follow-up.
-
-```{r}
-
-## Create the composite outcome
-trial2 <- trial %>% 
-  mutate(preterm = ifelse(preg_outcome_final == "livebirth" & preg_outcome_final_gw < 37,
-                          1,
-                          0))
-
-## Run the KM analysis only considering the composite outcome.
-wrisk <- km_estimator(trial2, "preterm")
-
-
-# km <- survfit(Surv(preg_outcome_final_gw, composite) ~ trt, data = trial2)
-# #summary(km)
-# 
-# wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
-#                         trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
-
-riskplot <- km_plot(wrisk, "KM Estimator of Risk for Preterm Live Birth")
-
-riskplot
-
-#ggsave(riskplot, file = "q13.png", width = 5, heigh = 5, units = "cm")
-
-```
-
-Output the risk ratio at the end of follow-up.
-
-```{r}
-
-#############################################################################################
-## Calculate the RR at different weeks of follow-up; SE is infinity at 42 weeks of follow-up
-## -- ASK JESS about this.
-## -- Funky thing: The standard errors get substantially larger as the weeks progress.
-## -- Likely because there are fewer and fewer individuals at risk at 42 weeks.
-## -- Need to check this intuition with Jess.
-
-# Get it at 37 weeks
-km_rr_wCI(wrisk, 37)
-
-# Get it at 39 weeks
-km_rr_wCI(wrisk, 39)
-
-# 40 weeks
-km_rr_wCI(wrisk, 40)
-
-# 41 weeks
-km_rr_wCI(wrisk, 41)
-
-# 42 weeks
-km_rr_wCI(wrisk, 42)
-
-```
 
