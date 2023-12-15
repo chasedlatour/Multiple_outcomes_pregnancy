@@ -120,7 +120,7 @@ each_sim <- function(n_sim, n){
       ## These are outcomes if all were treated (i.e., potential outcomes)
       sga_trt = sga_func(final_pregnancy_outcomes_trt, 1, phase4),
       ## These are outcomes if all were untreated (i.e., potential outcomes)
-      sga_untrt = sga_func(final_pregnancy_outcomes_trt, 0, phase4),
+      sga_untrt = sga_func(final_pregnancy_outcomes_untrt, 0, phase4),
       #sga = sga_func(final_pregnancy_outcomes, trt, phase4)
       
       
@@ -136,6 +136,12 @@ each_sim <- function(n_sim, n){
            final_pregnancy_outcomes_untrt = map(final_pregnancy_outcomes_untrt, 
                                               ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
     unnest_wider(c(final_pregnancy_outcomes_trt, final_pregnancy_outcomes_untrt)) 
+  
+  #Testing
+  testtrt <- subset(data, sga_trt == 1)
+  table(testtrt$preg_outcome_final_trt)
+  testutrt <- subset(data, sga_untrt == 1)
+  table(testutrt$preg_outcome_final_untrt)
   
   return(data)
   
@@ -340,10 +346,19 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
 sga_func <- function(final_pregnancy_outcomes, trt, phase4){
   
   # Determine probability of SGA based upon trt and preeclampsia
-  prob_sga <- subset(phase4, trt_value == trt & preeclampsia_flag == final_pregnancy_outcomes$preeclampsia)$p_sga
+  prob_sga <- subset(phase4, trt_value == trt & preeclampsia_flag ==
+                       final_pregnancy_outcomes$preeclampsia)$p_sga
   
   # Determine if they actually had SGA based upon this probability
-  sga <- rbinom(1,1, prob = prob_sga)
+  sga <- ifelse(final_pregnancy_outcomes$preg_outcome_final == "fetaldeath",
+                0,
+                rbinom(1,1, prob = prob_sga))
+  #sga <- rbinom(1,1, prob = prob_sga)
+  
+  # SGA does not apply if the pregnancy did not end in a live birth
+  # sga2 <- ifelse(final_pregnancy_outcomes$preg_outcome_final == "fetaldeath",
+  #                0,
+  #                sga)
   
   return(sga)
 }
