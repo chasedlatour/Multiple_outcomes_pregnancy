@@ -57,7 +57,16 @@ trial <- dataset %>%
                                preeclampsia_untrt),
          sga = ifelse(trt == 1,
                       sga_trt,
-                      sga_untrt))
+                      sga_untrt)) %>% 
+  rowwise() %>% 
+  mutate(censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+                    1,
+                    0),
+         time = ifelse(censor == 1,
+                       first_censoring_gw,
+                       preg_outcome_final_gw)
+         ) %>% 
+  ungroup()
 
 # Note that censoring is the same regardless of treatment.
 
@@ -101,7 +110,8 @@ trial %>%
             p25 = quantile(first_index, 0.25),
             median = median(first_index),
             p75 = quantile (first_index, 0.75),
-            max = max(first_index)
+            max = max(first_index),
+            nmiss = sum(is.na(first_index))
             )
 
 ```
@@ -111,12 +121,13 @@ Figural description of the distribution of pregnancy outcomes, facet wrapped by 
 ```{r}
 
 trial %>% 
+  #mutate(trt_label = factor(trt)) %>% 
   mutate(trt_label = factor(trt, labels = c("Treatment = 0", "Treatment = 1"))) %>% 
   ggplot(aes(x = first_index)) +
   geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
   facet_wrap(~trt_label, scales = "free") +
-  ylim(0, 200) +  # Set the y-axis limit to 0 to 200
-  xlim(4, 20) +
+  #ylim(0, 200) +  # Set the y-axis limit to 0 to 200
+  xlim(1, 19) +
   xlab("Gestational Week at Index") +  # Set the x-axis label
   ylab("Count")
 
@@ -164,7 +175,8 @@ Figural description of the distribution of pregnancy outcomes, facet wrapped by 
 
 trial %>% 
   mutate(trt_label = factor(trt, labels = c("Treatment = 0", "Treatment = 1"))) %>% 
-  ggplot(aes(x = preg_outcome_final_gw, color = preg_outcome_final, fill = preg_outcome_final)) +
+  #mutate(trt_label = factor(trt)) %>% 
+  ggplot(aes(x = preg_outcome_final_gw, fill = preg_outcome_final)) +
   geom_histogram(alpha=0.35, position = 'identity', binwidth = 1) +
   facet_grid(facets = trt_label ~.) +
   xlab("Gestational Week at Pregnancy Outcome") +
@@ -204,6 +216,7 @@ km_estimator <- function(dataset, outcome_var, outcome_var_t){
   
   ## Run the KM analysis only considering the composite outcome.
   km <- survfit(Surv(get(outcome_var_t), get(outcome_var)) ~ trt, data = dataset)
+  # Test: km <- survfit(Surv(preterm_t, preterm_km) ~ trt, data = trial2)
   #summary(km)
   
   wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
@@ -222,12 +235,12 @@ Code for function that plots the KM curve.
 km_plot <- function(dataset, plot_title){
   riskplot <- ggplot() +
     geom_step(data = dataset, aes(x = t, y = r,  group = factor(trt), color = factor(trt)))+
-    xlab("Weeks")+
+    xlab("Weeks from Index")+
     ylab("Risk") +
-    scale_color_discrete(labels = c("Treated", "Untreated"))+
+    scale_color_discrete(labels = c("Untreated", "Treated"))+
     ggtitle(plot_title) +  # Add the title parameter
    # scale_y_continuous(limits = c(0, 0.55), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5))+
-    #scale_x_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8,10, 12))+
+    #scale_x_continuous(limits = c(2, 12), breaks = c(0, 2, 4, 6, 8,10, 12))+
     theme_classic(base_size = 15)+
     theme(legend.position = c(0.28, 0.9), legend.title = element_blank(),
           legend.background = element_rect(fill="transparent"), 
@@ -370,18 +383,18 @@ aj_rr <- function(aj_object, t_val){
 
 ```
 
-Code for function that plots the AJ object. **This still needs some work to be sure that it's outputting everything correctly.**
+Code for function that plots the AJ object. **This still needs some work to be sure that it's outputting everything correctly.** Currently, the x-axis is wrong. Should be from index date.
 
 ```{r}
 
 aj_plot <- function(aj_object, xlab="Gestational weeks post-conception", ylab="Probability in State",
                     outcome = "", competing = ""){
   plot(aj_object, col=c(1,2,1,2), lty=c(2,2,1,1),
-       mark.time=FALSE, lwd=2,  xscale=12,
+       mark.time=FALSE, lwd=2,  #xscale=12,
        xlab=xlab, ylab=ylab)
-    legend("topleft", legend = c(paste(competing, ":untreated"), paste(competing, ":treated"),
-                                 paste(outcome, ":untreated"), paste(outcome, ":treated") 
-                                 ),
+  legend("topleft", legend = c(paste(competing, ":untreated"), paste(competing, ":treated"),
+                               paste(outcome, ":untreated"), paste(outcome, ":treated") 
+                               ),
          col = c(1, 2, 1, 2), lty = c(1, 1, 2, 2), lwd = 2, bty = 'n')
 
   # legend(240, .6, c(paste(outcome, ":untreated"), paste(outcome, ":treated"), paste(competing, ":untreated"), paste(competing, ":treated")),
@@ -463,20 +476,26 @@ Output the cumulative incidence curves at the end of follow-up.
 ## Create the composite outcome
 trial2 <- trial %>% 
   mutate(
-    # Make an indicator that the patient was censored before we observed their outcome
-    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
-                    1,
-                    0),
-    composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1 & censor == 0,
-                            1,
-                            0),
-    composite_gw = ifelse(censor == 0,
-                          preg_outcome_final_gw,
-                          first_censoring_gw)
+    # Make an indicator that the patient was censored before we observed their outcome - made earlier
+    # censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+    #                 1,
+    #                 0),
+    # Make composite
+    composite = case_when(censor == 1 ~ 0,
+                          preg_outcome_final == "fetaldeath" & censor == 0 ~ 1,
+                          preg_outcome_final == "livebirth" & censor == 0 & preeclampsia == 1 ~ 1,
+                          preg_outcome_final == "livebirth" & censor == 0 & preeclampsia == 0 ~ 0) #,
+    # composite = ifelse(preg_outcome_final == "fetaldeath" | preeclampsia == 1 & censor == 0,
+    #                         1,
+    #                         0),
+    # composite_gw = ifelse(censor == 0,
+    #                       preg_outcome_final_gw,
+    #                       first_censoring_gw)
     )
 
 ## Run the KM analysis only considering the composite outcome.
-wrisk <- km_estimator(trial2, "composite","composite_gw")
+#wrisk <- km_estimator(trial2, "composite","composite_gw")
+wrisk <- km_estimator(trial2, "composite","time")
 
 riskplot <- km_plot(wrisk, "KM Estimator of Risk for Composite Outcome")
 
@@ -498,10 +517,8 @@ Output the risk ratio at the end of follow-up.
 ## -- more censoring.
 ## -- Need to check this intuition with Jess.
 
-# 42 weeks post-LMP, or 40 weeks post-conception (end of follow-up)
-km_rr42 <- km_rr_wCI(wrisk, 42)
+km_rr <- km_rr_wCI(wrisk, 41)
 
-# km_rr42
 
 ```
 
@@ -513,9 +530,9 @@ km_rr42 <- km_rr_wCI(wrisk, 42)
 trial2 <- trial %>% 
   mutate(
     # Make an indicator that the patient was censored before we observed their outcome
-    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
-                    1,
-                    0),
+    # censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+    #                 1,
+    #                 0),
     # Make a multi-level outcome
     composite_multi = case_when(censor == 1 ~ 0,
                                 censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
@@ -551,11 +568,12 @@ aj_plot(aj_object = aj, outcome = "composite", competing = "delivery")
 
 ```{r}
 
-compare(km_rr42, aj_rrs_composite)
+compare(km_rr, aj_rrs_composite)
 
 ```
 
-## SGA
+## SGA with Fetal Death Only as Competing Event
+
 
 ### KM Estimator
 
@@ -567,21 +585,120 @@ Output the cumulative incidence curves at the end of follow-up.
 trial2 <- trial %>% 
   mutate(
     # Make an indicator that the patient was censored before we observed their outcome
-    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
-                    1,
-                    0),
+    # censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+    #                 1,
+    #                 0),
     # Make an indicator for sga, incorporating censoring
     sga_km = ifelse(sga == 1 & censor == 0,
                     1,
-                    0),
+                    0)#,
     # Make a time variable for sga, incorporating censoring
-    sga_t = ifelse(sga == 1 & censor == 0,
-                   preg_outcome_final_gw,
-                   first_censoring_gw)
+    # sga_t = ifelse(sga == 1 & censor == 0,
+    #                preg_outcome_final_gw,
+    #                first_censoring_gw)
     )
 
 ## Run the KM analysis only considering the composite outcome.
-wrisk <- km_estimator(trial2, "sga_km","sga_t")
+wrisk <- km_estimator(trial2, "sga_km","time")
+
+riskplot <- km_plot(wrisk, "KM Estimator of Risk for SGA")
+
+riskplot
+
+#ggsave(riskplot, file = "q13.png", width = 5, height = 5, units = "cm")
+
+```
+
+Output the risk ratio at the end of follow-up.
+
+```{r}
+
+# Undefined at 42 weeks
+km_rr <- km_rr_wCI(wrisk, 42)
+
+# km_rr42
+
+```
+
+### AJ Estimator
+
+```{r}
+
+## Make dataset the way that we want it
+trial2 <- trial %>% 
+  mutate(
+    # Make an indicator that the patient was censored before we observed their outcome
+    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+                    1,
+                    0),
+    # Make a multi-level outcome
+    sga_multi = case_when(censor == 1 ~ 0,
+                          censor == 0 & sga == 1 ~ 1,
+                          censor == 0 & preg_outcome_final == "fetaldeath" ~ 2,
+                          censor == 0 & sga == 0 & preg_outcome_final == "livebirth" ~ 0), 
+    # COULD BE 3 - COME BACK
+    # Make a gestational week variable for the sga_multi variable
+    sga_multi_gw = ifelse(censor == 1,
+                                first_censoring_gw,
+                                preg_outcome_final_gw)
+  )
+
+
+## Run the competing events analysis
+
+# Make the AJ object
+
+aj <- aj_estimator(trial2, "sga_multi", "sga_multi_gw")
+
+# Calculate the RRs
+
+aj_rrs_composite <- aj_rr(aj, 42)
+
+# aj_rrs_composite
+
+# Print the plot
+
+aj_plot(aj_object = aj, outcome = "sga", competing = "no sga")
+
+```
+
+### Estimate the bias between KM and RR
+
+```{r}
+
+compare(km_rr, aj_rrs_composite)
+
+```
+
+
+
+## SGA with all Competing Events
+
+### KM Estimator
+
+Output the cumulative incidence curves at the end of follow-up.
+
+```{r}
+
+## Create the composite outcome
+trial2 <- trial %>% 
+  mutate(
+    # Make an indicator that the patient was censored before we observed their outcome
+    # censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+    #                 1,
+    #                 0),
+    # Make an indicator for sga, incorporating censoring
+    sga_km = ifelse(sga == 1 & censor == 0,
+                    1,
+                    0)#,
+    # Make a time variable for sga, incorporating censoring
+    # sga_t = ifelse(sga == 1 & censor == 0,
+    #                preg_outcome_final_gw,
+    #                first_censoring_gw)
+    )
+
+## Run the KM analysis only considering the composite outcome.
+wrisk <- km_estimator(trial2, "sga_km","time")
 
 riskplot <- km_plot(wrisk, "KM Estimator of Risk for SGA")
 
@@ -652,12 +769,11 @@ compare(km_rr, aj_rrs_composite)
 
 ```
 
-
 ## Preterm live birth
 
 ### KM Estimator
 
-Output the cumulative incidence curves at the end of follow-up.
+Output the cumulative incidence curves at the end of follow-up. Note that we generated gestational weeks from conception, not LMP. Preterm birth is defined as birth <37 weeks of gestation from LMP (2 weeks prior to conception). Thus, we define preterm birth here as birth that occurs at <35 weeks of gestation from conception.
 
 ```{r}
 
@@ -665,18 +781,55 @@ Output the cumulative incidence curves at the end of follow-up.
 trial2 <- trial %>% 
   mutate(
     # Make an indicator that the patient was censored before we observed their outcome
-    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+    censor = ifelse(first_censoring_gw < preg_outcome_final_gw & 
+                      !is.na(first_censoring_gw),
                     1,
                     0),
     # Make an indicator for sga, incorporating censoring
-    preterm_km = ifelse(preg_outcome_final_gw < 37 & censor == 0,
+    preterm_km = ifelse(preg_outcome_final_gw < 35 & censor == 0 & 
+                          preg_outcome_final == "livebirth", # Previously 37
                         1,
                         0),
-    # Make a time variable for sga, incorporating censoring
-    preterm_t = ifelse(preg_outcome_final_gw < 37 & censor == 0,
-                       preg_outcome_final_gw,
-                       first_censoring_gw)
-    )
+    preterm_t = ifelse(preterm_km == 1, preg_outcome_final_gw,
+                       ifelse(preterm_km == 0 & time >= 35, 34,
+                              time))
+    # preterm_t = ifelse(preterm_km == 1, preg_outcome_final_gw,
+    #                ifelse(preg_outcome_final_gw < 35 & preg_outcome_final == "fetaldeath" & 
+    #                         censor == 0, preg_outcome_final_gw,
+    #                       ifelse(preg_outcome_final_gw >= 35 & censor == 0, 34,
+    #                              ifelse(censor == 1 & first_censoring_gw >= 35, 34,
+    #                                     ifelse(censor == 1 & first_censoring_gw < 35, 
+    #                                            first_censoring_gw, NA)))))
+
+    # preterm_t = case_when(
+    #   preterm_km == 1 ~ preg_outcome_final_gw,
+    #   preg_outcome_final_gw < 35 & preg_outcome_final == "fetaldeath" & censor == 0 ~ preg_outcome_final_gw,
+    #   preg_outcome_final_gw >= 35 & censor == 0 ~ 35,
+    #   censor == 1 & first_censoring_gw >= 35 ~ 35,
+    #   censor == 1 & first_censoring_gw < 35 ~ first_censoring_gw
+    # )
+
+  )
+
+
+      
+  #     ifelse(preg_outcome_final_gw < 35 & censor == 0 & 
+  #                        preg_outcome_final == "livebirth", # Previously 37
+  #                      preg_outcome_final_gw,
+  #                      first_censoring_gw)
+  #   ) %>% 
+  # # Now, account for the fact that follow-up should stop at 36 weeks.
+  # mutate(
+  #   # Reset outcome to what it should be at 36 weeks
+  #   # This functionally shouldn't matter since preterm can only happen before 36 weeks
+  #   preterm_km = ifelse(preterm_t >= 35,
+  #                       0,
+  #                       preterm_km),
+  #   # Reset timing so that it ends at 36 weeks of follow-up
+  #   preterm_t = ifelse(preterm_t >= 35,
+  #                      35,
+  #                      preterm_t)
+  # )
 
 ## Run the KM analysis only considering the composite outcome.
 wrisk <- km_estimator(trial2, "preterm_km","preterm_t")
@@ -713,9 +866,9 @@ trial2 <- trial %>%
     # Make a multi-level outcome
     preterm_multi = case_when(censor == 1 ~ 0,
                               censor == 0 & preg_outcome_final == "livebirth" & 
-                                preg_outcome_final_gw < 37 ~ 1,
+                                preg_outcome_final_gw < 35 ~ 1,
                               censor == 0 & preg_outcome_final == "livebirth" &
-                                preg_outcome_final_gw >= 37 ~ 2,
+                                preg_outcome_final_gw >= 35 ~ 2,
                               censor == 0 & preg_outcome_final == "fetaldeath" ~ 2),
     # Don't think we would calculate risks after 36 weeks since no longer at risk. Fetal 
     # -- death is only competing event.
@@ -725,6 +878,19 @@ trial2 <- trial %>%
     preterm_multi_gw = ifelse(censor == 1,
                               first_censoring_gw,
                               preg_outcome_final_gw)
+  ) %>% 
+  #Now, account for the fact that follow-up should stop at 36 weeks
+  mutate(
+    # Fix the outcomes to no event (i.e., censor) if the event timing is after 36 weeks
+    preterm_multi = ifelse(preterm_multi_gw >= 35,
+                           0, # i.e., treat as censoring event.
+                          # 2, #i.e., safe from preterm birth, even if ultimatley end in fetal death
+                           preterm_multi),
+    # Cap the event timing at 36 weeks
+    preterm_multi_gw = ifelse(preterm_multi_gw >= 35,
+                              36, # i.e., if treat as censoring event
+                              #36,
+                              preterm_multi_gw)
   )
 
 

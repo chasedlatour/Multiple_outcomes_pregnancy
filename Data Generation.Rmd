@@ -72,7 +72,8 @@ each_sim <- function(n_sim, n){
       phase1_outcomes = sample_outcomes_for_id(phase1), 
       
       # Identify the last gestational week that a person experiences of pregnancy up to 20 weeks of gestation
-      last_GA_pre20 = pre20(phase1_outcomes),
+      # -- from LMP or 18 weeks from conception.
+      last_GA_pre18 = pre18(phase1_outcomes),
       
       # Create the index outcomes for the trial
       index_gw = list(rbinom(nrow(phase1), size=1, prob=phase1$p_index)),
@@ -85,7 +86,8 @@ each_sim <- function(n_sim, n){
       
       # Create an indicator variable as to whether the patient actually
       # -- enters the trial. If last_GA_pre20 < first_index, then they can't enter the trial.
-      trial_participant = (last_GA_pre20 >= 4) && (first_index <= last_GA_pre20),
+      trial_participant = (last_GA_pre18 >= 2) && (first_index <= last_GA_pre18),
+      # Use 2 here instead of 4 because from conception and not LMP.
       
       #### PHASE 2
       
@@ -230,12 +232,11 @@ sample_index_for_id <- function(data) {
 
 
 
-pre20 <- function(outcomes){
-  # Create a subset of gestational weeks 0 through 19, though note that these
+pre18 <- function(outcomes){
+  # Create a subset of gestational weeks 0 through 18, though note that these
   # -- are indexed as 1:20 because of R's coding style (vector indices start at 1). 
   # -- Notably for moving forward, outcomes are observed at the following gestational week
-  outcomes_sub <- outcomes[1:20]  # Represents 0:19
-  # Testing: outcomes_sub <- outcomes[[1]][1:20]
+  outcomes_sub <- outcomes[1:19]  # Represents 0:18
   
   # Identify the first gestational week where we will see a fetal death on the 
   # -- following gestational week.
@@ -244,8 +245,8 @@ pre20 <- function(outcomes){
   # Identify the last gestational week that someone could be indexed into the cohort.
   # -- This would be the last week before someone experiences a fetal death.
   last_ga <- ifelse(is.na(first_ga),
-                 20,
-                 first_ga - 1) 
+                    18,
+                    first_ga - 1) 
   # Subtracted 1 because first_ga is indexed starting at 1, while our gestational weeks are indexed
   # -- starting at 0.
   
@@ -299,6 +300,7 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
   
   # If no preeclampsia evidence or first outcome from phase2_outcomes, 
   # -- then return a list of pregnancy outcomes from phase2_outcomes
+  # -- Do not worry about +/- 1 here because they're both indexed in a vector from 1.
   if(first_outcome_index < first_preeclampsia | is.na(first_preeclampsia)){
     return(list(
       
@@ -306,9 +308,11 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       preg_outcome_final = sub("_next$", "", phase2_outcomes[first_outcome_index]),
       
       # Determine the gestational timing of the first outcome
-      # -- We add 1 here because we are assuming that the outcome is observed at the 
+      # -- Originally, we added 1 here because we are assuming that the outcome is observed at the 
       # -- week after they're determined.
-      preg_outcome_final_gw = first_outcome_index + 1,
+      # -- However, R indexes a vector from 1, not 0, and we are indexing from 0, so we would
+      # -- subtract 1 to account for that. -- They equal out.
+      preg_outcome_final_gw = first_outcome_index,
       
       # Make preeclampsia indicator - Preeclampsia didn't occur before the outcome and so not observed
       preeclampsia = 0
@@ -332,7 +336,7 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
         # Determine the final pregnancy outcome from the probabilities in phase 3
         preg_outcome_final = outcome,
         
-        # Determine the gestational timing of the outcome - same logic on not subtracting 1
+        # Determine the gestational timing of the outcome - same logic on not adding/subtracting 1
         preg_outcome_final_gw = first_preeclampsia,
         
         # Make preeclampsia indicator - Preeclampsia observed before the outcome so observed
@@ -385,8 +389,15 @@ censoring <- function(data, first_index){
   # We add one because first_index gw starts at 0, but R vectors start at 1.
   
   # Determine the gw of the first censoring event
-  first_censor <- which(censor[first_index2:n]==1)[1] - 1
+  censoring <- which(censor == 1)
+  #first_censor <- which(censor[first_index2:n]==1)[1] - 1
   # Subtract one to get back to gw indexed at 0 or conception
+  
+  first_censor_index <- which(censoring > first_index2)
+  
+  first_censor <- ifelse(all(censor == 0),
+                         NA,
+                         censoring[first_censor_index] - 1)
   
   # Return the gestational week of the first censoring event
   # -- Note that this is independent of outcome generation and exposure
@@ -407,9 +418,9 @@ Generate the data for one clinical trial.
 
 # Specify the required values for the simulation
 n_sim <- 1
-n <- 3000
+n <- 10000
 
-set.seed(123)
+set.seed(1234)
 data <- each_sim(n_sim, n)
 
 ### Save the file as an RDS file
