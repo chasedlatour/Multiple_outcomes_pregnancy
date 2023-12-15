@@ -137,11 +137,11 @@ each_sim <- function(n_sim, n){
                                               ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
     unnest_wider(c(final_pregnancy_outcomes_trt, final_pregnancy_outcomes_untrt)) 
   
-  #Testing
-  testtrt <- subset(data, sga_trt == 1)
-  table(testtrt$preg_outcome_final_trt)
-  testutrt <- subset(data, sga_untrt == 1)
-  table(testutrt$preg_outcome_final_untrt)
+  # #Testing
+  # testtrt <- subset(data, sga_trt == 1)
+  # table(testtrt$preg_outcome_final_trt)
+  # testutrt <- subset(data, sga_untrt == 1)
+  # table(testutrt$preg_outcome_final_untrt)
   
   return(data)
   
@@ -407,9 +407,9 @@ Generate the data for one clinical trial.
 
 # Specify the required values for the simulation
 n_sim <- 1
-n <- 2000
+n <- 3000
 
-set.seed(1234)
+set.seed(123)
 data <- each_sim(n_sim, n)
 
 ### Save the file as an RDS file
