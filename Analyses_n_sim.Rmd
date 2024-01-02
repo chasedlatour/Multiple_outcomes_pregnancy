@@ -14,6 +14,7 @@ library(tidyverse)
 library(survival)
 library(Epi)
 library(kableExtra)
+library(ggridges)
 ```
 
 # Description
@@ -373,17 +374,29 @@ trial <- dataset %>%
                                             rename_all(~ paste("no_censor_composite_", .))),
          
          ## Calculate RRs and risks for SGA outcome
-         km_sga = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
-                                                               outcome_var_t = "time", t_val = 41) %>% 
-                                     rename_all(~ paste("km_sga_", .))),
+         # km_sga = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+         #                                                       outcome_var_t = "time", t_val = 41) %>% 
+         #                             rename_all(~ paste("km_sga_", .))),
+         km_sga_fd = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+                                                            outcome_var_t = "time", t_val = 41) %>% 
+                                  rename_all(~ paste("km_sga_fd_", .))),
          aj_sga_fd = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_do", 
                                                                "sga_multi_do_gw", 41) %>% 
                                      rename_all(~ paste("aj_sga_fd_", .))),
+         no_censor_sga_fd = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
+                                                                          outcome_var = "sga_no_censor") %>% 
+                                            rename_all(~ paste("no_censor_sga_fd_", .))),
+         km_sga_all = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+                                                             outcome_var_t = "time", t_val = 41) %>%
+                                   rename_all(~ paste("km_sga_all_", .))),
          aj_sga_all = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_all", 
                                                                "sga_multi_all_gw", 41) %>% 
                                      rename_all(~ paste("aj_sga_all_", .))),
-         no_censor_sga = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "sga_no_censor") %>% 
-                                            rename_all(~ paste("no_censor_sga_", .))),
+         no_censor_sga_all = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
+                                                                           outcome_var = "sga_no_censor") %>% 
+                                            rename_all(~ paste("no_censor_sga_all_", .))),
+         # no_censor_sga = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "sga_no_censor") %>% 
+         #                                    rename_all(~ paste("no_censor_sga_", .))),
          
          ## Calculate RRs and risks for preterm live birth as outcome
          km_preterm = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "preterm_km",
@@ -396,7 +409,9 @@ trial <- dataset %>%
                                           rename_all(~ paste("no_censor_preterm_", .)))
          
          ) %>% 
-  unnest_wider(c(km_composite, aj_composite, no_censor_composite, km_sga, aj_sga_fd, aj_sga_all, no_censor_sga,
+  unnest_wider(c(km_composite, aj_composite, no_censor_composite, km_sga_fd, aj_sga_fd, km_sga_all,
+                 aj_sga_all, #no_censor_sga,
+                 no_censor_sga_fd, no_censor_sga_all,
                  km_preterm, aj_preterm, no_censor_preterm))
 
 ## Everything seems to work as expected, though should compare results from original to new
@@ -450,14 +465,15 @@ trial2 <- trial %>%
                              `no_censor_composite_ r_0`, `aj_composite_ r_1`, `aj_composite_ r_0`,
                              `km_composite_ rr`, `no_censor_composite_ rr`, `aj_composite_ rr`,
                              `km_composite_ rd`, `no_censor_composite_ rd`, `aj_composite_ rd`, "composite_")),
-    sga_fd = list(bias_outcome(`km_sga_ r_1`, `km_sga_ r_0`, `no_censor_sga_ r_1`, `no_censor_sga_ r_0`,
+    sga_fd = list(bias_outcome(`km_sga_fd_ r_1`, `km_sga_fd_ r_0`, `no_censor_sga_fd_ r_1`, 
+                               `no_censor_sga_fd_ r_0`,
                                `aj_sga_fd_ r_1`, `aj_sga_fd_ r_0`, 
-                               `km_sga_ rr`, `no_censor_sga_ rr`, `aj_sga_fd_ rr`,
-                               `km_sga_ rd`, `no_censor_sga_ rd`, `aj_sga_fd_ rd`, "sga_fd_")),
-    sga_all = list(bias_outcome(`km_sga_ r_1`, `km_sga_ r_0`, `no_censor_sga_ r_1`, `no_censor_sga_ r_0`,
-                               `aj_sga_all_ r_1`, `aj_sga_all_ r_0`, 
-                               `km_sga_ rr`, `no_censor_sga_ rr`, `aj_sga_all_ rr`,
-                               `km_sga_ rd`, `no_censor_sga_ rd`, `aj_sga_all_ rd`, "sga_all_")),
+                               `km_sga_fd_ rr`, `no_censor_sga_fd_ rr`, `aj_sga_fd_ rr`,
+                               `km_sga_fd_ rd`, `no_censor_sga_fd_ rd`, `aj_sga_fd_ rd`, "sga_fd_")),
+    sga_all = list(bias_outcome(`km_sga_all_ r_1`, `km_sga_all_ r_0`, `no_censor_sga_all_ r_1`, 
+                                `no_censor_sga_all_ r_0`, `aj_sga_all_ r_1`, `aj_sga_all_ r_0`, 
+                               `km_sga_all_ rr`, `no_censor_sga_all_ rr`, `aj_sga_all_ rr`,
+                               `km_sga_all_ rd`, `no_censor_sga_all_ rd`, `aj_sga_all_ rd`, "sga_all_")),
     preterm = list(bias_outcome(`km_preterm_ r_1`, `km_preterm_ r_0`, `no_censor_preterm_ r_1`,
                                 `no_censor_preterm_ r_0`, `aj_preterm_ r_1`, `aj_preterm_ r_0`,
                                 `km_preterm_ rr`, `no_censor_preterm_ rr`, `aj_preterm_ rr`,
@@ -472,60 +488,410 @@ trial2 <- trial %>%
 
 These are calculated across the simulated cohorts with the point estimate calculated as the mean, and the standard error of the estimate across cohorts used for confidence intervals.
 
-We will calculate this for all three ways of analyzing the data. Further, we will eventually quantify how much, on average, the KM estimator over-estimated the risk compared to a situation in which there was no censoring and a situation in which an AJ estimator was used to account for censoring.
+We will calculate this for all three ways of analyzing the data. 
 
 ```{r}
 
+# Function that outputs the RR and RD estimates for each of the analytic approaches.
 
-```
+## Dynamic column names -- OLD
+# outcome_rr_rd <- function(dataset, outcome_var){
+#   
+#   z <- qnorm(0.975)
+#   
+#   data2 <- dataset %>% 
+#     ungroup() %>% 
+#     summarize(
+#       
+#       outcome = outcome_var,
+#       
+#       ##########
+#       ## Composite outcome
+#       ##########
+#       
+#       ### KM Estimates
+#       ### -- RR
+#       !!paste0("rr_", outcome_var, "_km") := exp(mean(log(!!sym(paste0("km_", outcome_var, "_ rr"))))),
+#       !!paste0("rr_", outcome_var, "_km_var") := var(log(!!sym(paste0("km_", outcome_var, "_ rr")))),
+#       !!paste0("rr_", outcome_var, "_km_lcl") := exp(log(!!sym(paste0("rr_", outcome_var, "_km"))) - 
+#                                                        z * sqrt(!!sym(paste0("rr_", outcome_var, "_km_var")) 
+#                                                                 / n())),
+#       !!paste0("rr_", outcome_var, "_km_ucl") := exp(log(!!sym(paste0("rr_", outcome_var, "_km"))) + 
+#                                                        z * sqrt(!!sym(paste0("rr_", outcome_var, "_km_var")) 
+#                                                                 / n())),
+#       ### -- RD
+#       !!paste0("rd_", outcome_var, "_km") := mean(!!sym(paste0("km_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_km_var") := var(!!sym(paste0("km_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_km_lcl") := !!sym(paste0("rd_", outcome_var, "_km")) - 
+#         z * sqrt(!!sym(paste0("rd_", outcome_var, "_km_var")) 
+#                  / n()),
+#       !!paste0("rd_", outcome_var, "_km_ucl") := !!sym(paste0("rd_", outcome_var, "_km")) + 
+#         z * sqrt(!!sym(paste0("rd_", outcome_var, "_km_var")) 
+#                  / n()),
+#       
+#       ### AJ Estimates
+#       ### -- RR
+#       !!paste0("rr_", outcome_var, "_aj") := exp(mean(log(!!sym(paste0("aj_", outcome_var, "_ rr"))))),
+#       !!paste0("rr_", outcome_var, "_aj_var") := var(log(!!sym(paste0("aj_", outcome_var, "_ rr")))),
+#       !!paste0("rr_", outcome_var, "_aj_lcl") := exp(log(!!sym(paste0("rr_", outcome_var, "_aj"))) 
+#                                                      - z * sqrt(!!sym(paste0("rr_", outcome_var, "_aj_var")) 
+#                                                                 / n())),
+#       !!paste0("rr_", outcome_var, "_aj_ucl") := exp(log(!!sym(paste0("rr_", outcome_var, "_aj"))) 
+#                                                      + z * sqrt(!!sym(paste0("rr_", outcome_var, "_aj_var")) 
+#                                                                 / n())),
+#       ### -- RD
+#       !!paste0("rd_", outcome_var, "_aj") := mean(!!sym(paste0("aj_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_aj_var") := var(!!sym(paste0("aj_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_aj_lcl") := !!sym(paste0("rd_", outcome_var, "_aj")) 
+#       - z * sqrt(!!sym(paste0("rd_", outcome_var, "_aj_var")) 
+#                  / n()),
+#       !!paste0("rd_", outcome_var, "_aj_ucl") := !!sym(paste0("rd_", outcome_var, "_aj")) 
+#       + z * sqrt(!!sym(paste0("rd_", outcome_var, "_aj_var")) 
+#                  / n()),
+#       
+#       ### No Censoring Estimates
+#       ### -- RR
+#       !!paste0("rr_", outcome_var, "_nocen") := exp(mean(log(!!sym(paste0("no_censor_", 
+#                                                                           outcome_var, "_ rr"))))),
+#       !!paste0("rr_", outcome_var, "_nocen_var") := var(log(!!sym(paste0("no_censor_", 
+#                                                                          outcome_var, "_ rr")))),
+#       !!paste0("rr_", outcome_var, "_nocen_lcl") := exp(log(!!sym(paste0("rr_", 
+#                                                                          outcome_var, "_nocen"))) 
+#                                                         - z * sqrt(!!sym(paste0("rr_", 
+#                                                                                 outcome_var, "_nocen_var")) 
+#                                                                    / n())),
+#       !!paste0("rr_", outcome_var, "_nocen_ucl") := exp(log(!!sym(paste0("rr_", 
+#                                                                          outcome_var, "_nocen"))) 
+#                                                         + z * sqrt(!!sym(paste0("rr_", 
+#                                                                                 outcome_var, "_nocen_var")) 
+#                                                                    / n())),
+#       ### -- RD
+#       !!paste0("rd_", outcome_var, "_nocen") := mean(!!sym(paste0("no_censor_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_nocen_var") := var(!!sym(paste0("no_censor_", outcome_var, "_ rd"))),
+#       !!paste0("rd_", outcome_var, "_nocen_lcl") := !!sym(paste0("rd_", outcome_var, "_nocen")) 
+#       - z * sqrt(!!sym(paste0("rd_", outcome_var, "_nocen_var")) 
+#                  / n()),
+#       !!paste0("rd_", outcome_var, "_nocen_ucl") := !!sym(paste0("rd_", outcome_var, "_nocen")) 
+#       + z * sqrt(!!sym(paste0("rd_", outcome_var, "_nocen_var")) 
+#                  / n())
+#       
+#     ) 
+#   
+#   return(data2)
+#   
+# }
 
-
-## Summarize Bias
-
-Code for function that summarizes the bias between KM and AJ estimators.
-
-```{r}
-
-compare <- function(km, aj){
+outcome_rr_rd <- function(dataset, outcome_var){
   
-  # Calculate the differences
-  differences <- tibble(
-      # Absolute Risks
-      r_0 = km$r_0 - aj$r_0,
-      r_1 = km$r_1 - aj$r_1,
-      # Risk Ratios
-      rr = log(km$rr) - log(aj$rr),
-      RR_lower = log(km$RR_lower) - log(aj$RR_lower),
-      RR_upper = log(km$RR_upper) - log(aj$RR_upper),
-      # Risk differences
-      rd = km$rd - aj_rrs_composite$rd,
-      RD_lower = km$RD_lower - aj$RD_lower,
-      RD_upper = km$RD_upper - aj$RD_upper,
-      Estimator = "Differences: KM-AJ"
-  )
+  z <- qnorm(0.975)
   
-  # Make the kable object
-  kable_object <- rbind(km, aj) %>% 
-    rbind(differences) %>% 
+  data2 <- dataset %>% 
     ungroup() %>% 
-    mutate(r_0 = round(r_0, 2),
-           r_1 = round(r_1, 2),
-           rr = round(rr, 2),
-           RR_lower = round(RR_lower, 2),
-           RR_upper = round(RR_upper, 2),
-           rd = round(rd, 2),
-           RD_lower = round(RD_lower, 2),
-           RD_upper = round(RD_upper, 2)) %>% 
-    #kbl() %>% 
-    kable(col.names = c("Estimator", "Risk Among Untreated", "Risk Among Treated","RR", "RR 95% LCL",
-                        "RR 95% UCL", "RD", "RD 95% LCL", "RD 95% UCL"),
-          align = "lcccccccc") %>% 
-    kable_classic() %>% 
-    row_spec(3, bold = T, color = "white", background = "black")
+    summarize(
+      
+      outcome = outcome_var,
+      
+      ##########
+      ## Composite outcome
+      ##########
+      
+      ### KM Estimates
+      ### -- RR
+      rr_km = exp(mean(log(!!sym(paste0("km_", outcome_var, "_ rr"))))),
+      rr_km_var = var(log(!!sym(paste0("km_", outcome_var, "_ rr")))),
+      rr_km_lcl = exp(log(rr_km) - z * sqrt(rr_km_var / n())),
+      rr_km_ucl = exp(log(rr_km) + z * sqrt(rr_km_var / n())),
+      ### -- RD
+      rd_km = mean(!!sym(paste0("km_", outcome_var, "_ rd"))),
+      rd_km_var := var(!!sym(paste0("km_", outcome_var, "_ rd"))),
+      rd_km_lcl := rd_km - z * sqrt(rd_km_var / n()),
+      rd_km_ucl := rd_km + z * sqrt(rd_km_var / n()),
+      
+      ### AJ Estimates
+      ### -- RR
+      rr_aj := exp(mean(log(!!sym(paste0("aj_", outcome_var, "_ rr"))))),
+      rr_aj_var := var(log(!!sym(paste0("aj_", outcome_var, "_ rr")))),
+      rr_aj_lcl := exp(log(rr_aj) - z * sqrt(rr_aj_var / n())),
+      rr_aj_ucl := exp(log(rr_aj) + z * sqrt(rr_aj_var / n())),
+      ### -- RD
+      rd_aj := mean(!!sym(paste0("aj_", outcome_var, "_ rd"))),
+      rd_aj_var := var(!!sym(paste0("aj_", outcome_var, "_ rd"))),
+      rd_aj_lcl := rd_aj - z * sqrt(rd_aj_var / n()),
+      rd_aj_ucl := rd_aj + z * sqrt(rd_aj_var / n()),
+      
+      ### No Censoring Estimates
+      ### -- RR
+      rr_nocen := exp(mean(log(!!sym(paste0("no_censor_", outcome_var, "_ rr"))))),
+      rr_nocen_var := var(log(!!sym(paste0("no_censor_", outcome_var, "_ rr")))),
+      rr_nocen_lcl := exp(log(rr_nocen) - z * sqrt(rr_nocen_var / n())),
+      rr_nocen_ucl := exp(log(rr_nocen) + z * sqrt(rr_nocen_var / n())),
+      ### -- RD
+      rd_nocen := mean(!!sym(paste0("no_censor_", outcome_var, "_ rd"))),
+      rd_nocen_var := var(!!sym(paste0("no_censor_", outcome_var, "_ rd"))),
+      rd_nocen_lcl := rd_nocen - z * sqrt(rd_nocen_var / n()),
+      rd_nocen_ucl := rd_nocen + z * sqrt(rd_nocen_var / n())
+      
+    ) 
   
-  return(kable_object)
+  return(data2)
   
 }
 
 
+# Make a dataset with RRs and RDs for each of the outcomes. 
+composite <- outcome_rr_rd(trial2, "composite")
+sga_fd <- outcome_rr_rd(trial2, "sga_fd")
+sga_all <- outcome_rr_rd(trial2, "sga_all")
+preterm <- outcome_rr_rd(trial2, "preterm")
+
+# Stack these datasets
+rr_and_rd <- rbind(composite, sga_fd) %>% 
+  rbind(sga_all) %>% 
+  rbind(preterm)
+
+
 ```
+
+## Plot and Print
+
+### RRs
+
+Use density ridges to illustrate the distribution of the RR estimates. In all RR plots, the x-axis, with the RRs is log-scaled.
+
+Below, is the code for the plotting function.
+
+```{r}
+
+# Clean up the dataset in a way that we can use.
+
+# OLD:
+# plot_rr <- function(dataset, outcome_var, title = ""){
+#   
+#    plot <- dataset %>% 
+#     select(`km_composite_ rr`, `aj_composite_ rr`, `no_censor_composite_ rr`) %>% 
+#     pivot_longer(names_to = "Estimator", 
+#                  cols = c(`km_composite_ rr`, `aj_composite_ rr`, `no_censor_composite_ rr`),
+#                  values_to = "Estimate") %>% 
+#     mutate(Estimator = case_when(Estimator == "km_composite_ rr" ~ "Kaplan Meier",
+#                                  Estimator == "aj_composite_ rr" ~ "Aalen-Johansen",
+#                                  Estimator == "no_censor_composite_ rr" ~ "No Censoring")) %>% 
+#     ggplot(aes(x = Estimate, y = Estimator, fill = Estimator)) +
+#     geom_density_ridges() +
+#     scale_x_continuous(trans = "log10") +
+#     theme(legend.position = "none") +
+#     ggtitle(title)
+#   
+#   # Suppress messages so that we do not see the binwidth message.
+#   suppressMessages(print(plot))
+#   
+# }
+
+# Function to plot the RRs
+
+plot_rr <- function(dataset, outcome_var, title = "") {
+  
+  rr_var <- paste0(outcome_var, "_ rr")
+
+  plot <- dataset %>% 
+    select(
+      !!sym(paste0("km_", rr_var)),
+      !!sym(paste0("aj_", rr_var)),
+      !!sym(paste0("no_censor_", rr_var))
+    ) %>% 
+    pivot_longer(
+      names_to = "Estimator", 
+      cols = c(!!sym(paste0("km_", rr_var)), 
+               !!sym(paste0("aj_", rr_var)), 
+               !!sym(paste0("no_censor_", rr_var))),
+      values_to = "Estimate"
+    ) %>% 
+    mutate(
+      Estimator = case_when(
+        Estimator == paste0("km_", rr_var) ~ "Kaplan Meier",
+        Estimator == paste0("aj_", rr_var) ~ "Aalen-Johansen",
+        Estimator == paste0("no_censor_", rr_var) ~ "No Censoring"
+      )
+    ) %>% 
+    ggplot(aes(x = Estimate, y = Estimator, fill = Estimator)) +
+    geom_density_ridges() +
+    scale_x_continuous(trans = "log10") +
+    theme(legend.position = "none") +
+    ggtitle(title)
+  
+  # Suppress messages so that we do not see the binwidth message.
+  suppressMessages(print(plot))
+  
+}
+
+```
+
+Plot of the RRs for the composite outcome.
+
+```{r}
+
+plot_rr(trial, "composite", "RRs for Composite Outcome")
+
+```
+
+Plot of the RRs for SGA, where the AJ estimator only considers Fetal Death as a competing event (i.e., delivery is treated as a censoring event.
+
+```{r}
+
+plot_rr(trial, "sga_fd", "RRs for SGA: Fetal Death Only as a Competing Event")
+
+```
+
+Plot of the RRs for SGA, where the AJ estimator considers both fetal death and live birth without SGA as competing events. For simplicity, we have considered these as only 1 competing event.
+
+```{r}
+
+plot_rr(trial, "sga_all", "RRs for SGA: Fetal Death and Non-SGA Live Birth as Competing Events")
+
+```
+
+Plot of the RRs for preterm birth. Fetal death is a competing event. Follow-up stops after 34 gestational weeks.
+
+```{r}
+
+plot_rr(trial, "preterm", "RRs for Preterm")
+
+```
+
+Finally, we print the summary RRs from each of the estimators:
+
+```{r}
+  
+rr_and_rd %>%
+  mutate(KM = paste0(round(rr_km,3), " (", round(rr_km_lcl,3), ", ", round(rr_km_ucl,3), ")"),
+         AJ = paste0(round(rr_aj,3), " (", round(rr_aj_lcl,3), ", ", round(rr_aj_ucl,3), ")"),
+         No_Censoring = paste0(round(rr_nocen,3), " (", round(rr_nocen_lcl,3), ", ", 
+                               round(rr_nocen_ucl,3), ")")
+         ) %>% 
+  mutate(Outcome = case_when(outcome == "composite" ~ "Composite",
+                             outcome == "sga_fd" ~ "SGA: Fetal Death Only",
+                             outcome == "sga_all" ~ "SGA: All Competing Events",
+                             outcome == "preterm" ~ "Preterm")) %>% 
+  select(c(Outcome, KM, AJ, No_Censoring)) %>% 
+  kbl() %>% 
+  kable_material(c("striped", "hover"))
+
+```
+
+### RDs
+
+Below is the code for the function plotting RDs for each study outcome.
+
+```{r}
+
+
+plot_rd <- function(dataset, outcome_var, title = "") {
+  
+  rd_var <- paste0(outcome_var, "_ rd")
+
+  plot <- dataset %>% 
+    select(
+      !!sym(paste0("km_", rd_var)),
+      !!sym(paste0("aj_", rd_var)),
+      !!sym(paste0("no_censor_", rd_var))
+    ) %>% 
+    pivot_longer(
+      names_to = "Estimator", 
+      cols = c(!!sym(paste0("km_", rd_var)), 
+               !!sym(paste0("aj_", rd_var)), 
+               !!sym(paste0("no_censor_", rd_var))),
+      values_to = "Estimate"
+    ) %>% 
+    mutate(
+      Estimator = case_when(
+        Estimator == paste0("km_", rd_var) ~ "Kaplan Meier",
+        Estimator == paste0("aj_", rd_var) ~ "Aalen-Johansen",
+        Estimator == paste0("no_censor_", rd_var) ~ "No Censoring"
+      )
+    ) %>% 
+    ggplot(aes(x = Estimate, y = Estimator, fill = Estimator)) +
+    geom_density_ridges() +
+    #scale_x_continuous(trans = "log10") +
+    theme(legend.position = "none") +
+    ggtitle(title)
+  
+  # Suppress messages so that we do not see the binwidth message.
+  suppressMessages(print(plot))
+  
+}
+
+```
+
+Plot of the RDs for the composite outcome.
+
+```{r}
+
+plot_rd(trial, "composite", "RDs for Composite Outcome")
+
+```
+
+Plot of the RRs for SGA, where the AJ estimator only considers Fetal Death as a competing event (i.e., delivery is treated as a censoring event.
+
+```{r}
+
+plot_rd(trial, "sga_fd", "RDs for SGA: Fetal Death Only as a Competing Event")
+
+```
+
+Plot of the RRs for SGA, where the AJ estimator considers both fetal death and live birth without SGA as competing events. For simplicity, we have considered these as only 1 competing event.
+
+```{r}
+
+plot_rd(trial, "sga_all", "RDs for SGA: Fetal Death and Non-SGA Live Birth as Competing Events")
+
+```
+
+Plot of the RRs for preterm birth. Fetal death is a competing event. Follow-up stops after 34 gestational weeks.
+
+```{r}
+
+plot_rd(trial, "preterm", "RDs for Preterm")
+
+```
+
+Finally, we print the summary RRs from each of the estimators:
+
+```{r}
+  
+rr_and_rd %>%
+  mutate(KM = paste0(round(rd_km,3), " (", round(rd_km_lcl,3), ", ", round(rd_km_ucl,3), ")"),
+         AJ = paste0(round(rd_aj,3), " (", round(rd_aj_lcl,3), ", ", round(rd_aj_ucl,3), ")"),
+         No_Censoring = paste0(round(rd_nocen,3), " (", round(rd_nocen_lcl,3), ", ", 
+                               round(rd_nocen_ucl,3), ")")
+         ) %>% 
+  mutate(Outcome = case_when(outcome == "composite" ~ "Composite",
+                             outcome == "sga_fd" ~ "SGA: Fetal Death Only",
+                             outcome == "sga_all" ~ "SGA: All Competing Events",
+                             outcome == "preterm" ~ "Preterm")) %>% 
+  select(c(Outcome, KM, AJ, No_Censoring)) %>% 
+  kbl() %>% 
+  kable_material(c("striped", "hover"))
+
+```
+
+# Save Files
+
+```{r}
+
+### Save the file as an RDS file
+
+# Get the directory where the Rmd file is located
+rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+# Specify the Excel file name and path relative to the Rmd file location
+
+## We want to save trial2
+trial2_save <- file.path(rmd_directory, "trial.rds")
+saveRDS(trial2, file = trial2_save)
+
+## And we want to save rr_and_rd
+rr_and_rd_save <- file.path(rmd_directory, "rr_and_rd.rds")
+saveRDS(rr_and_rd, file = rr_and_rd_save)
+
+
+```
+
