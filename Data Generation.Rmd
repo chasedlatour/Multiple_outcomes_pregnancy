@@ -422,7 +422,7 @@ Generate the data for one clinical trial.
 ```{r}
 
 # Specify the required values for the simulation
-n_sims <- 2
+n_sim <- 2
 settings <- list(
   n = 1000
 )
