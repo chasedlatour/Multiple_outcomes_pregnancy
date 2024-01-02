@@ -467,6 +467,19 @@ trial2 <- trial %>%
 
 ```
 
+
+## Calculate RRs and RDs
+
+These are calculated across the simulated cohorts with the point estimate calculated as the mean, and the standard error of the estimate across cohorts used for confidence intervals.
+
+We will calculate this for all three ways of analyzing the data. Further, we will eventually quantify how much, on average, the KM estimator over-estimated the risk compared to a situation in which there was no censoring and a situation in which an AJ estimator was used to account for censoring.
+
+```{r}
+
+
+```
+
+
 ## Summarize Bias
 
 Code for function that summarizes the bias between KM and AJ estimators.
