@@ -435,6 +435,29 @@ trial <- dataset %>%
 
 # Conduct Analyses
 
+## Describe Cohorts
+
+Count the number of individuals indexed into the cohort - we'll calculate the median.
+
+```{r}
+
+trial %>% 
+  summarize(median_n = quantile(as.double(trial_n), 0.5))
+
+```
+
+## Look at Risks
+
+Calculate simple risk estimates for composite outcome.
+
+```{r}
+
+
+
+```
+
+## Clean Data for Analyses
+
 We want to understand the difference in the risk, risk ratio, and risk difference estimates from each analytic approach. This will include the following calculations:
 
 - Risk(Outcome|Treated) via KM - Risk(Outcome|Treated) without Censoring
