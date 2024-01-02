@@ -70,6 +70,7 @@ trial <- dataset %>%
 
 # Note that censoring is the same regardless of treatment.
 
+
 ```
 
 ## Number of trial participants
