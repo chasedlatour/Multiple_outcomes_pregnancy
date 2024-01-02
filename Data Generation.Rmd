@@ -447,7 +447,6 @@ saveRDS(all_sims, file = data_save)
 # -- For other simulations, will want to incorporate parallel processing. This currently takes a while
 # -- Maybe should get rid of some of the if/then options if possible.
 
-test <- rbind(dataset, dataset2)
 
 
 ```

@@ -37,6 +37,20 @@ data_read <- file.path(rmd_directory, "data.rds")
 
 dataset <- readRDS(data, file = data_read)
 
+# Add in the additional data that we simulated
+
+# data_read2 <- file.path(rmd_directory, "data2.rds")
+# 
+# dataset2 <- readRDS(data2, file = data_read2)
+
+# Stack these new datasets together so that we can use them in the analyses moving forward.
+
+# dataset <- union(dataset, dataset2)
+# 
+# data_save <- file.path(rmd_directory, "data.rds")
+# 
+# saveRDS(dataset, file = data_save)
+
 ```
 
 ## Write functions that describes the data
