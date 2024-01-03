@@ -164,11 +164,6 @@ each_sim <- function(n_sim, n){
   
 }
 
-## Test
-# set.seed(1234)
-# test <- each_sim(n_sim, n)
-
-
 
 
 
@@ -434,7 +429,7 @@ Generate the data for one clinical trial.
 ```{r}
 
 # Specify the required values for the simulation
-n_sim <- 2
+n_sim <- 3
 settings <- list(
   n = 100#1500
 )

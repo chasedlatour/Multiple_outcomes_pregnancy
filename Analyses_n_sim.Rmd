@@ -367,7 +367,7 @@ no_censor_estimator <- function(dataset, outcome_var){
 ```{r}
 
 
-trial <- all_sims %>%  #dataset %>% 
+trial <- dataset %>%  # all_sims %>%  # For testing
   bind_rows() %>% 
   nest(data = c(-sim_id)) %>% 
   mutate(first_state = purrr::map(data, ~list(.x$start_seed[[1]])), # only taking the first row because all the same
