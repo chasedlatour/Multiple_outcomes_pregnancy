@@ -49,7 +49,8 @@ This is the baseline function that will be used to generate each cohort.
 each_sim <- function(n_sim, n){
   
   # Set the seed for the simulation as equal to n_sim.
-  set.seed(n_sim)
+  #set.seed(n_sim)
+  # Decided that this should only be done once at the beginning of the simulation, per Morris et al. 2019
   
   # Generate 0 through 40 gestational weeks - 1 vector
   gw = list(seq(0,40, by = 1))
@@ -422,14 +423,17 @@ Generate the data for one clinical trial.
 ```{r}
 
 # Specify the required values for the simulation
-n_sim <- 500
+n_sim <- 50
 settings <- list(
   n = 1500
 )
   
-#set.seed(1234)
+
 #data <- each_sim(n_sim, n)
-for_sim <- c(list(.x = 201:n_sim, .f=each_sim), settings)
+for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
+# Setting seed once at the beginnign of the simulation, not at
+# -- the beginning of each repetition of the DGM, as was done previously.
+set.seed(1234)
 all_sims <- do.call(purrr::map, args = for_sim)
 
 
