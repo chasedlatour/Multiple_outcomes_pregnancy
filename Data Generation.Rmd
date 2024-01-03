@@ -48,6 +48,8 @@ This is the baseline function that will be used to generate each cohort.
 # This function will be run to generate a cohort for each simulation
 each_sim <- function(n_sim, n){
   
+  initial_seed <- list(.Random.seed)
+
   # Set the seed for the simulation as equal to n_sim.
   #set.seed(n_sim)
   # Decided that this should only be done once at the beginning of the simulation, per Morris et al. 2019
@@ -142,6 +144,15 @@ each_sim <- function(n_sim, n){
            final_pregnancy_outcomes_untrt = map(final_pregnancy_outcomes_untrt, 
                                               ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
     unnest_wider(c(final_pregnancy_outcomes_trt, final_pregnancy_outcomes_untrt)) 
+  
+  finish_seed <- list(.Random.seed)
+  
+  ## Store the random states
+  data <- data %>% 
+    mutate(
+      start_seed = initial_seed,
+      end_seed = finish_seed
+    )
   
   # #Testing
   # testtrt <- subset(data, sga_trt == 1)
@@ -423,9 +434,9 @@ Generate the data for one clinical trial.
 ```{r}
 
 # Specify the required values for the simulation
-n_sim <- 50
+n_sim <- 2
 settings <- list(
-  n = 1500
+  n = 100#1500
 )
   
 
@@ -440,12 +451,12 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 # Get the directory where the Rmd file is located
-rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
+#rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
 
 # Specify the Excel file name and path relative to the Rmd file location
-data_save <- file.path(rmd_directory, "data2.rds")
+#data_save <- file.path(rmd_directory, "data2.rds")
 
-saveRDS(all_sims, file = data_save)
+#saveRDS(all_sims, file = data_save)
 
 # Eventually - want to write in code that will save these data. 
 # -- For other simulations, will want to incorporate parallel processing. This currently takes a while

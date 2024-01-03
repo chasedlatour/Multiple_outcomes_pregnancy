@@ -366,10 +366,13 @@ no_censor_estimator <- function(dataset, outcome_var){
 
 ```{r}
 
-trial <- dataset %>% 
+
+trial <- all_sims %>%  #dataset %>% 
   bind_rows() %>% 
   nest(data = c(-sim_id)) %>% 
-  mutate(trial_cohort = purrr::map(data, ~trial_cohort(.x)),
+  mutate(first_state = purrr::map(data, ~list(.x$start_seed[[1]])), # only taking the first row because all the same
+         last_state = purrr::map(data, ~list(.x$end_seed[[1]])), # only taking the first row because all the same
+         trial_cohort = purrr::map(data, ~trial_cohort(.x)),
          trial_n = purrr::map(trial_cohort, ~total_trial(.x)),
          trial_n_trt = purrr::map(trial_cohort, ~total_trial_trt(.x)),
          trial_indices = purrr::map(trial_cohort, ~trial_index(.x)),
