@@ -1,48 +1,25 @@
----
-title: "Multiple outcomes pregnancy"
-author: "Chase Latour"
-date: "`r Sys.Date()`"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(tidyverse)
-library(readxl)
-```
-
-# Upload the parameter Excel file.
-
-```{r}
-
-# Get the directory where the Rmd file is located
-rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
-
-# Specify the Excel file name and path relative to the Rmd file location
-excel_file <- file.path(rmd_directory, "Simulation parameters.xlsx")
-
-# Read SheetA from the Excel file
-phase1 <- read_xlsx(excel_file, sheet = "Phase1")
-phase2 <- read_xlsx(excel_file, sheet = "Phase2")
-phase3 <- read_xlsx(excel_file, sheet = "Phase3")
-phase4 <- read_xlsx(excel_file, sheet = "Phase4")
-phase5 <- read_xlsx(excel_file, sheet = "Phase5")
-
-```
+#####################################################
+# Program: Data generation functions. R
+# Programmer: Chase
+# Date last modified: 01.22.2024
+#
+# Purpose: The program contains all the R functions
+# for generating the data. The goal of doing this
+# is to ensure that these functions only need to be
+# editing one time and will apply throughout all
+# simulations easily.
+#####################################################
 
 
-# Data Generation Functions
 
-This is the baseline function that will be used to generate each cohort.
-
-```{r}
-
-# This function will be run to generate a cohort for each simulation
+# This is the baseline function that will be 
+# -- used to generate each cohort.
+# This function will be run to generate a cohort 
+# -- for each simulation.
 each_sim <- function(n_sim, n){
   
   initial_seed <- list(.Random.seed)
-
+  
   # Set the seed for the simulation as equal to n_sim.
   #set.seed(n_sim)
   # Decided that this should only be done once at the beginning of the simulation, per Morris et al. 2019
@@ -128,14 +105,14 @@ each_sim <- function(n_sim, n){
       ##### PHASE 5 -- Censoring -- STILL NEED TO INCORPORATE THIS.
       first_censoring_gw = censoring(phase5, first_index)
       
-
+      
       
     ) %>% 
     ungroup() %>% 
     mutate(final_pregnancy_outcomes_trt = map(final_pregnancy_outcomes_trt, 
                                               ~set_names(.x, str_c(names(.x), "_trt"))),
            final_pregnancy_outcomes_untrt = map(final_pregnancy_outcomes_untrt, 
-                                              ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
+                                                ~set_names(.x, str_c(names(.x), "_untrt")))) %>% 
     unnest_wider(c(final_pregnancy_outcomes_trt, final_pregnancy_outcomes_untrt)) 
   
   finish_seed <- list(.Random.seed)
@@ -159,14 +136,9 @@ each_sim <- function(n_sim, n){
 
 
 
+### Below, are all of the functions that will be used within the `each_sim()` function.
 
 
-
-```
-
-Below, are all of the functions that will be used within the `each_sim()` function.
-
-```{r}
 
 # This function will create the pregnancy outcomes based upon the probabilities
 # -- recorded in phase1, phase2, phase3, and phase4.
@@ -321,32 +293,32 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
       preeclampsia = 0
     ))
   }
-
-
-    ## If first or equally first outcome is preeclampsia, then regenerate the pregnancy outcome and timing
-    if(first_outcome_index >= first_preeclampsia){
+  
+  
+  ## If first or equally first outcome is preeclampsia, then regenerate the pregnancy outcome and timing
+  if(first_outcome_index >= first_preeclampsia){
+    
+    # Regenerate the pregnancy outcome
+    p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_fetaldeath
+    p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_livebirth
+    options <- c("fetaldeath", "livebirth")
+    # Assign the corresponding probabilities to each of the potential pregnancy outcomes
+    probabilities <- c(p_fetaldeath, p_livebirth)
+    outcome <- sample(options, size=1, prob=probabilities)
+    
+    return(list(
       
-      # Regenerate the pregnancy outcome
-      p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_fetaldeath
-      p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_livebirth
-      options <- c("fetaldeath", "livebirth")
-      # Assign the corresponding probabilities to each of the potential pregnancy outcomes
-      probabilities <- c(p_fetaldeath, p_livebirth)
-      outcome <- sample(options, size=1, prob=probabilities)
+      # Determine the final pregnancy outcome from the probabilities in phase 3
+      preg_outcome_final = outcome,
       
-      return(list(
-        
-        # Determine the final pregnancy outcome from the probabilities in phase 3
-        preg_outcome_final = outcome,
-        
-        # Determine the gestational timing of the outcome - same logic on not adding/subtracting 1
-        preg_outcome_final_gw = first_preeclampsia,
-        
-        # Make preeclampsia indicator - Preeclampsia observed before the outcome so observed
-        preeclampsia = 1
-        
-      ))
-    }
+      # Determine the gestational timing of the outcome - same logic on not adding/subtracting 1
+      preg_outcome_final_gw = first_preeclampsia,
+      
+      # Make preeclampsia indicator - Preeclampsia observed before the outcome so observed
+      preeclampsia = 1
+      
+    ))
+  }
   
 }
 
@@ -408,48 +380,6 @@ censoring <- function(data, first_index){
   return(first_censor)
   
 }
-  
-
-```
 
 
 
-
-# Generate the Data
-
-Generate the data for one clinical trial.
-
-```{r}
-
-# Specify the required values for the simulation
-n_sim <- 3
-settings <- list(
-  n = 100#1500
-)
-  
-
-#data <- each_sim(n_sim, n)
-for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
-# Setting seed once at the beginnign of the simulation, not at
-# -- the beginning of each repetition of the DGM, as was done previously.
-set.seed(1234)
-all_sims <- do.call(purrr::map, args = for_sim)
-
-
-### Save the file as an RDS file
-
-# Get the directory where the Rmd file is located
-rmd_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
-
-# Specify the Excel file name and path relative to the Rmd file location
-data_save <- file.path(rmd_directory, "data2.rds")
-
-saveRDS(all_sims, file = data_save)
-
-# Eventually - want to write in code that will save these data. 
-# -- For other simulations, will want to incorporate parallel processing. This currently takes a while
-# -- Maybe should get rid of some of the if/then options if possible.
-
-
-
-```

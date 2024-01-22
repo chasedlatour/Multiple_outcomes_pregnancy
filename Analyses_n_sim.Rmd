@@ -366,70 +366,72 @@ no_censor_estimator <- function(dataset, outcome_var){
 
 ```{r}
 
+# 
+# trial <- dataset %>%  # all_sims %>%  # For testing
+#   bind_rows() %>% 
+#   nest(data = c(-sim_id)) %>% 
+#   mutate(first_state = purrr::map(data, ~list(.x$start_seed[[1]])), # only taking the first row because all the same
+#          last_state = purrr::map(data, ~list(.x$end_seed[[1]])), # only taking the first row because all the same
+#          trial_cohort = purrr::map(data, ~trial_cohort(.x)),
+#          trial_n = purrr::map(trial_cohort, ~total_trial(.x)),
+#          trial_n_trt = purrr::map(trial_cohort, ~total_trial_trt(.x)),
+#          trial_indices = purrr::map(trial_cohort, ~trial_index(.x)),
+#          trial_outcomes = purrr::map(trial_cohort, ~count_outcomes(.x)),
+#          trial_outcomes_dist = purrr::map(trial_cohort, ~outcomes_dist(.x)),
+#          trial_pre_sga = purrr::map(trial_cohort, ~count_p_s(.x)),
+#          
+#          ## Calculate RRs and risks for composite outcome
+#          km_composite = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "composite_km",
+#                                                                outcome_var_t = "time", t_val = 41) %>% 
+#                                      rename_all(~ paste("km_composite_", .))),
+#          aj_composite = purrr::map(trial_cohort, ~aj_estimator(.x, "composite_multi", 
+#                                                                "composite_multi_gw", 41) %>% 
+#                                      rename_all(~ paste("aj_composite_", .))),
+#          no_censor_composite = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "composite_no_censor") %>% 
+#                                             rename_all(~ paste("no_censor_composite_", .))),
+#          
+#          ## Calculate RRs and risks for SGA outcome
+#          # km_sga = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+#          #                                                       outcome_var_t = "time", t_val = 41) %>% 
+#          #                             rename_all(~ paste("km_sga_", .))),
+#          km_sga_fd = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+#                                                             outcome_var_t = "time", t_val = 41) %>% 
+#                                   rename_all(~ paste("km_sga_fd_", .))),
+#          aj_sga_fd = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_do", 
+#                                                                "sga_multi_do_gw", 41) %>% 
+#                                      rename_all(~ paste("aj_sga_fd_", .))),
+#          no_censor_sga_fd = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
+#                                                                           outcome_var = "sga_no_censor") %>% 
+#                                             rename_all(~ paste("no_censor_sga_fd_", .))),
+#          km_sga_all = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
+#                                                              outcome_var_t = "time", t_val = 41) %>%
+#                                    rename_all(~ paste("km_sga_all_", .))),
+#          aj_sga_all = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_all", 
+#                                                                "sga_multi_all_gw", 41) %>% 
+#                                      rename_all(~ paste("aj_sga_all_", .))),
+#          no_censor_sga_all = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
+#                                                                            outcome_var = "sga_no_censor") %>% 
+#                                             rename_all(~ paste("no_censor_sga_all_", .))),
+#          # no_censor_sga = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "sga_no_censor") %>% 
+#          #                                    rename_all(~ paste("no_censor_sga_", .))),
+#          
+#          ## Calculate RRs and risks for preterm live birth as outcome
+#          km_preterm = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "preterm_km",
+#                                                                outcome_var_t = "preterm_t", t_val = 34) %>% 
+#                                      rename_all(~ paste("km_preterm_", .))),
+#          aj_preterm = purrr::map(trial_cohort, ~aj_estimator(.x, "preterm_multi", 
+#                                                                "preterm_multi_gw", 41) %>% 
+#                                      rename_all(~ paste("aj_preterm_", .))),
+#          no_censor_preterm = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "preterm_no_censor") %>% 
+#                                           rename_all(~ paste("no_censor_preterm_", .)))
+#          
+#          ) %>% 
+#   unnest_wider(c(km_composite, aj_composite, no_censor_composite, km_sga_fd, aj_sga_fd, km_sga_all,
+#                  aj_sga_all, #no_censor_sga,
+#                  no_censor_sga_fd, no_censor_sga_all,
+#                  km_preterm, aj_preterm, no_censor_preterm))
 
-trial <- dataset %>%  # all_sims %>%  # For testing
-  bind_rows() %>% 
-  nest(data = c(-sim_id)) %>% 
-  mutate(first_state = purrr::map(data, ~list(.x$start_seed[[1]])), # only taking the first row because all the same
-         last_state = purrr::map(data, ~list(.x$end_seed[[1]])), # only taking the first row because all the same
-         trial_cohort = purrr::map(data, ~trial_cohort(.x)),
-         trial_n = purrr::map(trial_cohort, ~total_trial(.x)),
-         trial_n_trt = purrr::map(trial_cohort, ~total_trial_trt(.x)),
-         trial_indices = purrr::map(trial_cohort, ~trial_index(.x)),
-         trial_outcomes = purrr::map(trial_cohort, ~count_outcomes(.x)),
-         trial_outcomes_dist = purrr::map(trial_cohort, ~outcomes_dist(.x)),
-         trial_pre_sga = purrr::map(trial_cohort, ~count_p_s(.x)),
-         
-         ## Calculate RRs and risks for composite outcome
-         km_composite = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "composite_km",
-                                                               outcome_var_t = "time", t_val = 41) %>% 
-                                     rename_all(~ paste("km_composite_", .))),
-         aj_composite = purrr::map(trial_cohort, ~aj_estimator(.x, "composite_multi", 
-                                                               "composite_multi_gw", 41) %>% 
-                                     rename_all(~ paste("aj_composite_", .))),
-         no_censor_composite = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "composite_no_censor") %>% 
-                                            rename_all(~ paste("no_censor_composite_", .))),
-         
-         ## Calculate RRs and risks for SGA outcome
-         # km_sga = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
-         #                                                       outcome_var_t = "time", t_val = 41) %>% 
-         #                             rename_all(~ paste("km_sga_", .))),
-         km_sga_fd = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
-                                                            outcome_var_t = "time", t_val = 41) %>% 
-                                  rename_all(~ paste("km_sga_fd_", .))),
-         aj_sga_fd = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_do", 
-                                                               "sga_multi_do_gw", 41) %>% 
-                                     rename_all(~ paste("aj_sga_fd_", .))),
-         no_censor_sga_fd = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
-                                                                          outcome_var = "sga_no_censor") %>% 
-                                            rename_all(~ paste("no_censor_sga_fd_", .))),
-         km_sga_all = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "sga_km",
-                                                             outcome_var_t = "time", t_val = 41) %>%
-                                   rename_all(~ paste("km_sga_all_", .))),
-         aj_sga_all = purrr::map(trial_cohort, ~aj_estimator(.x, "sga_multi_all", 
-                                                               "sga_multi_all_gw", 41) %>% 
-                                     rename_all(~ paste("aj_sga_all_", .))),
-         no_censor_sga_all = purrr::map(trial_cohort, ~no_censor_estimator(.x, 
-                                                                           outcome_var = "sga_no_censor") %>% 
-                                            rename_all(~ paste("no_censor_sga_all_", .))),
-         # no_censor_sga = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "sga_no_censor") %>% 
-         #                                    rename_all(~ paste("no_censor_sga_", .))),
-         
-         ## Calculate RRs and risks for preterm live birth as outcome
-         km_preterm = purrr::map(trial_cohort, ~km_estimator(.x, outcome_var = "preterm_km",
-                                                               outcome_var_t = "preterm_t", t_val = 34) %>% 
-                                     rename_all(~ paste("km_preterm_", .))),
-         aj_preterm = purrr::map(trial_cohort, ~aj_estimator(.x, "preterm_multi", 
-                                                               "preterm_multi_gw", 41) %>% 
-                                     rename_all(~ paste("aj_preterm_", .))),
-         no_censor_preterm = purrr::map(trial_cohort, ~no_censor_estimator(.x, outcome_var = "preterm_no_censor") %>% 
-                                          rename_all(~ paste("no_censor_preterm_", .)))
-         
-         ) %>% 
-  unnest_wider(c(km_composite, aj_composite, no_censor_composite, km_sga_fd, aj_sga_fd, km_sga_all,
-                 aj_sga_all, #no_censor_sga,
-                 no_censor_sga_fd, no_censor_sga_all,
-                 km_preterm, aj_preterm, no_censor_preterm))
+trial <- clean_and_analyze(dataset)
 
 ## Everything seems to work as expected, though should compare results from original to new
 
@@ -498,28 +500,30 @@ bias_outcome <- function(r1_km, r0_km, r1_nocen, r0_nocen, r1_aj, r0_aj,
 
 
 
-trial2 <- trial %>% 
-  rowwise() %>% 
-  mutate(
-    composite = list(bias_outcome(`km_composite_ r_1`, `km_composite_ r_0`, `no_censor_composite_ r_1`,
-                             `no_censor_composite_ r_0`, `aj_composite_ r_1`, `aj_composite_ r_0`,
-                             `km_composite_ rr`, `no_censor_composite_ rr`, `aj_composite_ rr`,
-                             `km_composite_ rd`, `no_censor_composite_ rd`, `aj_composite_ rd`, "composite_")),
-    sga_fd = list(bias_outcome(`km_sga_fd_ r_1`, `km_sga_fd_ r_0`, `no_censor_sga_fd_ r_1`, 
-                               `no_censor_sga_fd_ r_0`,
-                               `aj_sga_fd_ r_1`, `aj_sga_fd_ r_0`, 
-                               `km_sga_fd_ rr`, `no_censor_sga_fd_ rr`, `aj_sga_fd_ rr`,
-                               `km_sga_fd_ rd`, `no_censor_sga_fd_ rd`, `aj_sga_fd_ rd`, "sga_fd_")),
-    sga_all = list(bias_outcome(`km_sga_all_ r_1`, `km_sga_all_ r_0`, `no_censor_sga_all_ r_1`, 
-                                `no_censor_sga_all_ r_0`, `aj_sga_all_ r_1`, `aj_sga_all_ r_0`, 
-                               `km_sga_all_ rr`, `no_censor_sga_all_ rr`, `aj_sga_all_ rr`,
-                               `km_sga_all_ rd`, `no_censor_sga_all_ rd`, `aj_sga_all_ rd`, "sga_all_")),
-    preterm = list(bias_outcome(`km_preterm_ r_1`, `km_preterm_ r_0`, `no_censor_preterm_ r_1`,
-                                `no_censor_preterm_ r_0`, `aj_preterm_ r_1`, `aj_preterm_ r_0`,
-                                `km_preterm_ rr`, `no_censor_preterm_ rr`, `aj_preterm_ rr`,
-                                `km_preterm_ rd`, `no_censor_preterm_ rd`, `aj_preterm_ rd`, "preterm_"))
-  ) %>% 
-  unnest(c(composite, sga_fd, sga_all, preterm))
+# trial2 <- trial %>% 
+#   rowwise() %>% 
+#   mutate(
+#     composite = list(bias_outcome(`km_composite_ r_1`, `km_composite_ r_0`, `no_censor_composite_ r_1`,
+#                              `no_censor_composite_ r_0`, `aj_composite_ r_1`, `aj_composite_ r_0`,
+#                              `km_composite_ rr`, `no_censor_composite_ rr`, `aj_composite_ rr`,
+#                              `km_composite_ rd`, `no_censor_composite_ rd`, `aj_composite_ rd`, "composite_")),
+#     sga_fd = list(bias_outcome(`km_sga_fd_ r_1`, `km_sga_fd_ r_0`, `no_censor_sga_fd_ r_1`, 
+#                                `no_censor_sga_fd_ r_0`,
+#                                `aj_sga_fd_ r_1`, `aj_sga_fd_ r_0`, 
+#                                `km_sga_fd_ rr`, `no_censor_sga_fd_ rr`, `aj_sga_fd_ rr`,
+#                                `km_sga_fd_ rd`, `no_censor_sga_fd_ rd`, `aj_sga_fd_ rd`, "sga_fd_")),
+#     sga_all = list(bias_outcome(`km_sga_all_ r_1`, `km_sga_all_ r_0`, `no_censor_sga_all_ r_1`, 
+#                                 `no_censor_sga_all_ r_0`, `aj_sga_all_ r_1`, `aj_sga_all_ r_0`, 
+#                                `km_sga_all_ rr`, `no_censor_sga_all_ rr`, `aj_sga_all_ rr`,
+#                                `km_sga_all_ rd`, `no_censor_sga_all_ rd`, `aj_sga_all_ rd`, "sga_all_")),
+#     preterm = list(bias_outcome(`km_preterm_ r_1`, `km_preterm_ r_0`, `no_censor_preterm_ r_1`,
+#                                 `no_censor_preterm_ r_0`, `aj_preterm_ r_1`, `aj_preterm_ r_0`,
+#                                 `km_preterm_ rr`, `no_censor_preterm_ rr`, `aj_preterm_ rr`,
+#                                 `km_preterm_ rd`, `no_censor_preterm_ rd`, `aj_preterm_ rd`, "preterm_"))
+#   ) %>% 
+#   unnest(c(composite, sga_fd, sga_all, preterm))
+
+trial2 <- apply_bias_outcome(trial)
 
 ```
 
