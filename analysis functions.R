@@ -18,6 +18,7 @@
 trial_cohort <- function(dataset){
   
   trial <- dataset %>% 
+    bind_rows() %>%
     subset(trial_participant == TRUE) %>% 
     # Identify the observed outcomes
     mutate(preg_outcome_final = ifelse(trt == 1,
@@ -211,33 +212,61 @@ count_p_s <- function(dataset){
 
 km_estimator <- function(dataset, outcome_var, outcome_var_t, t_val){
   
+  z <- qnorm(0.975)
+  
   ## Run the KM analysis only considering the composite outcome.
   km <- survfit(Surv(get(outcome_var_t), get(outcome_var)) ~ trt, data = dataset)
+  # Testing
+  # km <- survfit(Surv(composite_km, composite_km) ~ trt, data = dataset)
   
-  wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, #se = km$std.err,
+  wrisk <- data.frame(t = km$time, s = km$surv, r = 1 - km$surv, se = km$std.err,
                       trt = c(rep(0, km$strata["trt=0"]), rep(1, km$strata["trt=1"])))
   
   estimate <- wrisk %>% 
     filter(t < t_val+0.5) %>% # Deal with no additional risk scenarios
     group_by(trt) %>% 
     summarize(r = last(r),
-              #se = last(se),
+              se = last(se),
               .groups = 'drop') %>% 
     pivot_wider(names_from = trt,
-                values_from = c(r), #, se
+                values_from = c(r, se), 
                 names_glue = "{.value}_{trt}") %>% 
     rowwise() %>% 
     mutate(rr = r_1/r_0,
+           selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+           rr_lcl = exp(log(rr) - z*selnrr),
+           rr_ucl = exp(log(rr) + z*selnrr),
            rd = r_1 - r_0,
+           se_rd = sqrt(se_1^2 + se_0^2),
+           rd_lcl = rd - 1.96*se_rd,
+           rd_ucl = rd + 1.96*se_rd,
            Estimator = "Kaplan-Meier") %>%
-    select(r_0, r_1, rr, #RR_lower, RR_upper, 
-           rd #, 
-           #RD_lower, RD_upper
+    select(r_0, r_1, rr, rr_lcl, rr_ucl,
+           rd, rd_lcl, rd_ucl
     )
   
   return(estimate)
   
 }
+
+# From Jess Edwards for AJ:
+# summod <- data.frame(r = mod$pstate[,2], se = mod$std.err[,2], hiv = c(0,1)) %>%
+#   pivot_wider(names_from=hiv, values_from = c(r, se)) %>%
+#   mutate(rr = r_1/r_0,
+#          rd = r_1 - r_0,
+#          # use delta method to get 95% CI
+#          logRR = log(rr),
+#          var_1 = se_1^2,
+#          var_0 = se_0^2,
+#          var_logRR = (1/r_0)^2 * var_0 + (1/r_1)^2 * var_1,
+#          logRR_lower = logRR - 1.96*sqrt(var_logRR),
+#          logRR_upper = logRR + 1.96*sqrt(var_logRR),
+#          RR_lower = exp(logRR_lower),
+#          RR_upper = exp(logRR_upper),
+#          se_rd = sqrt(se_1^2 + se_0^2),
+#          RD_lower = rd - 1.96*se_rd,
+#          RD_upper = rd + 1.96*se_rd) %>%
+#   select(rr, RR_lower, RR_upper, rd, RD_lower, RD_upper)
 
 
 ## AJ Estimator
@@ -264,27 +293,30 @@ aj_estimator <- function(dataset, outcome_var, outcome_var_t, t_val){
   
   summod <- data.frame(t = mod$time,
                        r = mod$pstate[,2], 
-                       #se = mod$std.err[,2],
-                       # This is not right yet
-                       #trt = c(rep(0, mod$strata["trt=0"]), rep(1, mod$strata["trt=1"]))
+                       se = mod$std.err[,2],
                        trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
                                rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
   ) %>%
     filter(t < t_val+0.5) %>%  # Deal with the jittering of outcomes
     group_by(trt) %>% 
     summarize(r = last(r),
-              #se = last(se),
+              se = last(se),
               .groups = 'drop') %>% 
     pivot_wider(names_from = trt,
-                values_from = c(r), #, se
+                values_from = c(r, se), 
                 names_glue = "{.value}_{trt}") %>% 
     rowwise() %>% 
     mutate(rr = r_1/r_0,
+           selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+           rr_lcl = exp(log(rr) - z*selnrr),
+           rr_ucl = exp(log(rr) + z*selnrr),
            rd = r_1 - r_0,
+           se_rd = sqrt(se_1^2 + se_0^2),
+           rd_lcl = rd - 1.96*se_rd,
+           rd_ucl = rd + 1.96*se_rd,
            Estimator = "Aalen-Johanssen") %>%
-    select(r_0, r_1, rr, #RR_lower, RR_upper, 
-           rd #, 
-           #RD_lower, RD_upper
+    select(r_0, r_1, rr, rr_lcl, rr_ucl,
+           rd, rd_lcl, rd_ucl
     )
   
   return(summod)
@@ -322,8 +354,8 @@ no_censor_estimator <- function(dataset, outcome_var){
 clean_analyze <- function(dset){
   
   hold <- dset %>% 
-    bind_rows() %>% 
-    nest(data = c(-sim_id)) %>% 
+    #bind_rows() %>%
+    nest(data = c(-sim_id)) %>%
     mutate(first_state = purrr::map(data, ~list(.x$start_seed[[1]])), # only taking the first row because all the same
            last_state = purrr::map(data, ~list(.x$end_seed[[1]])), # only taking the first row because all the same
            trial_cohort = purrr::map(data, ~trial_cohort(.x)),
