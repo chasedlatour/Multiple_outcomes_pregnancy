@@ -48,6 +48,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario1.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
 
 
 ################################
@@ -74,6 +82,15 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario2.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
+
 
 
 ################################
@@ -99,6 +116,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario3.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
 
 
 
@@ -127,6 +152,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario4.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
 
 
 ################################
@@ -152,6 +185,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario5.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
 
 
 
@@ -179,6 +220,15 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario6.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
+
 
 
 ################################
@@ -204,6 +254,15 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario7.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
 
 
 
@@ -231,6 +290,15 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario8.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
+
+
 
 
 ################################
@@ -256,6 +324,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario9.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
 
 
 
@@ -284,6 +360,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario10.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
 
 
 
@@ -315,6 +399,13 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario11.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)
+
 
 
 
@@ -345,3 +436,10 @@ all_sims <- do.call(purrr::map, args = for_sim)
 ### Save the file as an RDS file
 
 saveRDS(all_sims, file = "scenario12.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("phase1","phase2","phase3","phase4","phase5",
+                 "for_sim", "all_sims")
+
+rm(list = data_delete)

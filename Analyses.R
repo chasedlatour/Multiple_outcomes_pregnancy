@@ -16,6 +16,10 @@ library(kableExtra)
 ## Load in the functions that need.
 source('analysis functions.R')
 
+
+
+
+
 #############################################
 ## SCENARIO 1
 #############################################
@@ -36,6 +40,12 @@ select_save <- analyses %>%
 
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario1.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
 
 
 
@@ -61,6 +71,15 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario2.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
+
+
+
 
 
 #############################################
@@ -82,6 +101,13 @@ select_save <- analyses %>%
 
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario3.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -105,6 +131,13 @@ select_save <- analyses %>%
 
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario4.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -130,6 +163,14 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario5.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
+
+
 
 
 
@@ -154,6 +195,12 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario6.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -176,6 +223,13 @@ select_save <- analyses %>%
 
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario7.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -201,6 +255,12 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario8.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -224,6 +284,12 @@ select_save <- analyses %>%
 
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario9.rds")
+
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
 
 
 
@@ -249,6 +315,12 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario10.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -258,7 +330,7 @@ saveRDS(select_save, "analyses_scenario10.rds")
 #############################################
 
 ## Load in the data
-data <- readRDS('scenario6.rds')
+data <- readRDS('scenario11.rds')
 
 # Clean the data for analyses
 trial <- trial_cohort(data)
@@ -273,6 +345,12 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario11.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
+
 
 
 
@@ -283,7 +361,7 @@ saveRDS(select_save, "analyses_scenario11.rds")
 #############################################
 
 ## Load in the data
-data <- readRDS('scenario6.rds')
+data <- readRDS('scenario12.rds')
 
 # Clean the data for analyses
 trial <- trial_cohort(data)
@@ -298,12 +376,36 @@ select_save <- analyses %>%
 ## Save the RDS
 saveRDS(select_save, "analyses_scenario12.rds")
 
+## Remove datasets from the environment to ensure no issues
+
+data_delete <- c("data", "trial", "analyses", "select_save")
+
+rm(list = data_delete)
 
 
 
 
+#############################################
+## GET SAMPLE SIZES OF TRIAL COHORTS FROM 
+## EACH SCENARIO
+#############################################
 
+## Scenario1
+data <- readRDS('scenario1.rds')
+trial <- trial_cohort(data)
+n_s1 <- nrow(trial)
+n_s1 # 518,444
 
+## Scenario2
+data <- readRDS('scenario2.rds')
+trial <- trial_cohort(data)
+n_s2 <- nrow(trial)
+n_s2 # 518,444
+
+## ALL HAVE THE SAME AMOUNT
+## -- As to be expected because the fetal death probabilities
+## -- are the same in the first 4 weeks of gestation and
+## -- we used the same seed for all simulations.
 
 
 
