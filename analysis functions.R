@@ -326,6 +326,67 @@ aj_estimator <- function(dataset, outcome_var, outcome_var_t, t_val){
   
 }
 
+## Create a function that calculates the RD and RR using the AJ
+## estimator with a 3-level variable.
+## Commented out because an additional function wasn't necessary.
+
+## Function to get the AJ estimate:
+
+# aj_estimator_3level <- function(dataset, outcome_var, outcome_var_t, t_val){
+#   
+#   z <- qnorm(0.975)
+#   
+#   #jitter ties
+#   #set.seed(1234)
+#   # Not sure if should set seed for jittering outcomes
+#   dataset2 <- dataset %>% 
+#     group_by(get(outcome_var_t)) %>% 
+#     add_tally() %>% 
+#     ungroup() %>% 
+#     mutate(
+#       # Jitter event times
+#       jitter = runif(nrow(dataset), min = -.01, max = .01), # N in the samp
+#       time = ifelse(n>1, get(outcome_var_t) + jitter, get(outcome_var_t))
+#     )
+#   
+#   # Run the AJ model
+#   aj <- survfit(Surv(time, factor(get(outcome_var))) ~ trt, data = dataset2)
+#   
+#   mod <- summary(aj)
+#   
+#   summod <- data.frame(t = mod$time,
+#                        r = mod$pstate[,2], 
+#                        se = mod$std.err[,2],
+#                        trt = c(rep(0, length(mod[["strata"]][mod[["strata"]] == "trt=0"])), 
+#                                rep(1, length(mod[["strata"]][mod[["strata"]] == "trt=1"])))
+#   ) %>%
+#     filter(t < t_val+0.5) %>%  # Deal with the jittering of outcomes
+#     group_by(trt) %>% 
+#     summarize(r = last(r),
+#               se = last(se),
+#               .groups = 'drop') %>% 
+#     pivot_wider(names_from = trt,
+#                 values_from = c(r, se), 
+#                 names_glue = "{.value}_{trt}") %>% 
+#     rowwise() %>% 
+#     mutate(rr = r_1/r_0,
+#            selnrr = sqrt((1/r_0)^2 * se_0^2 + (1/r_1)^2*se_1^2),
+#            rr_lcl = exp(log(rr) - z*selnrr),
+#            rr_ucl = exp(log(rr) + z*selnrr),
+#            rd = r_1 - r_0,
+#            se_rd = sqrt(se_1^2 + se_0^2),
+#            rd_lcl = rd - 1.96*se_rd,
+#            rd_ucl = rd + 1.96*se_rd,
+#            Estimator = "Aalen-Johanssen") %>%
+#     dplyr::select(r_0, r_1, rr, rr_lcl, rr_ucl,
+#                   rd, rd_lcl, rd_ucl)
+#   
+#   return(summod)
+#   
+#   
+# }
+
+
 ## Create a function that calculates the RD and RR that we would have
 ## -- expected without censoring. This should provide the 
 ## -- correct estimate for the trial and give a sense of how 
@@ -477,7 +538,10 @@ clean_analyze <- function(dset){
       km_sga_all = purrr::map(data, ~km_estimator(.x, outcome_var = "sga_km",
                                                   outcome_var_t = "time", t_val = 41) %>%
                                 rename_all(~ paste("km_sga_all_", .))),
-      aj_sga_all = purrr::map(data, ~aj_estimator(.x, "sga_multi_all", 
+      # aj_sga_all = purrr::map(data, ~aj_estimator(.x, "sga_multi_all", 
+      #                                             "sga_multi_all_gw", 41) %>% 
+      #                           rename_all(~ paste("aj_sga_all_", .))),
+      aj_sga_all = purrr::map(data, ~aj_estimator(.x, "sga_multi_all_3_level", 
                                                   "sga_multi_all_gw", 41) %>% 
                                 rename_all(~ paste("aj_sga_all_", .))),
       no_censor_sga_all = purrr::map(data, ~no_censor_estimator(.x, 
