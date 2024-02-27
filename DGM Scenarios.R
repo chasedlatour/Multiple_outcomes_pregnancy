@@ -18,7 +18,7 @@ source("Data generation functions.R")
 # These are the same across scenarios.
 n_sim <- 1
 settings <- list(
-  n = 1000 # 1 million
+  n = 1200 # 1 million
 )
 
 

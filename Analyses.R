@@ -31,19 +31,22 @@ data <- readRDS('scenario1.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario1.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario1.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario1.rds")
+saveRDS(analyses, "analyses_scenario1.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -61,19 +64,22 @@ data <- readRDS('scenario2.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario2.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario2.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario2.rds")
+saveRDS(analyses, "analyses_scenario2.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -92,19 +98,22 @@ data <- readRDS('scenario3.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario3.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario3.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario3.rds")
+saveRDS(analyses, "analyses_scenario3.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -122,19 +131,22 @@ data <- readRDS('scenario4.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario4.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario4.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario4.rds")
+saveRDS(analyses, "analyses_scenario4.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -153,19 +165,22 @@ data <- readRDS('scenario5.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario5.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario5.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario5.rds")
+saveRDS(analyses, "analyses_scenario5.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -185,19 +200,22 @@ data <- readRDS('scenario6.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario6.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario6.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario6.rds")
+saveRDS(analyses, "analyses_scenario6.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -214,19 +232,22 @@ data <- readRDS('scenario7.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario7.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario7.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario7.rds")
+saveRDS(analyses, "analyses_scenario7.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -245,19 +266,22 @@ data <- readRDS('scenario8.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario8.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario8.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario8.rds")
+saveRDS(analyses, "analyses_scenario8.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -275,19 +299,22 @@ data <- readRDS('scenario9.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario9.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario9.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario9.rds")
+saveRDS(analyses, "analyses_scenario9.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -305,19 +332,22 @@ data <- readRDS('scenario10.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario10.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario10.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario10.rds")
+saveRDS(analyses, "analyses_scenario10.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -335,19 +365,22 @@ data <- readRDS('scenario11.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario11.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario11.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario11.rds")
+saveRDS(analyses, "analyses_scenario11.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
@@ -366,46 +399,25 @@ data <- readRDS('scenario12.rds')
 # Clean the data for analyses
 trial <- trial_cohort(data)
 
+## Describe the cleaned data
+trial_descriptive <- describe_trial(trial)
+saveRDS(trial_descriptive, "describe trial_scenario12.rds")
+
+## Describe the outcomes in the cleaned data
+trial_outcomes <- describe_outcomes(trial)
+saveRDS(trial_outcomes, "describe outcomes_scenario12.rds")
+
 ## Analyze the cleaned data
 analyses <- clean_analyze(trial)
-
-## Select the information of-interest
-select_save <- analyses %>% 
-  select(-c(data))
-
-## Save the RDS
-saveRDS(select_save, "analyses_scenario12.rds")
+saveRDS(analyses, "analyses_scenario12.rds")
 
 ## Remove datasets from the environment to ensure no issues
 
-data_delete <- c("data", "trial", "analyses", "select_save")
+data_delete <- c("data", "trial", "trial_descriptive", 
+                 "trial_outcomes","analyses")
 
 rm(list = data_delete)
 
-
-
-
-#############################################
-## GET SAMPLE SIZES OF TRIAL COHORTS FROM 
-## EACH SCENARIO
-#############################################
-
-## Scenario1
-data <- readRDS('scenario1.rds')
-trial <- trial_cohort(data)
-n_s1 <- nrow(trial)
-n_s1 # 518,444
-
-## Scenario2
-data <- readRDS('scenario2.rds')
-trial <- trial_cohort(data)
-n_s2 <- nrow(trial)
-n_s2 # 518,444
-
-## ALL HAVE THE SAME AMOUNT
-## -- As to be expected because the fetal death probabilities
-## -- are the same in the first 4 weeks of gestation and
-## -- we used the same seed for all simulations.
 
 
 
