@@ -123,7 +123,7 @@ transform <- function(dset, var_name) {
                         round(`potential_ risk_sga_trt`, 2)),
       truth_rd = ifelse(var_name == "composite",
                         round(!!sym(paste0("potential_ rd_", var_name)) * 100, 2),
-                        round(`potential_ rd_sga`, 2))
+                        round(`potential_ rd_sga` * 100, 2))
     ) %>% 
     ungroup() %>% 
     select(c(Scenario, km_r0, km_r1, km_rd, km_rd_ci,
