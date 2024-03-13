@@ -1,0 +1,159 @@
+---
+title: "Descriptive Results of Mega Population"
+author: "Chase Latour"
+date: "1/29/2024"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Call in the libraries that we need
+
+library(kableExtra)
+library(tidyverse)
+
+```
+
+# Overview
+
+This HTML file provides the results for our pregnancy simulation focusing on modeling late-pregnancy outcomes as competing events. Pregnancies were only included in the clinical trial if they reached their 4th week of gestation from conception (6 from LMP).
+
+# Set Up
+
+Call in the necessary libraries, files, etc. that we will need.
+
+```{r hide=TRUE}
+
+# Call in the data that we need
+s1 <- readRDS("describe trial_scenario1.rds") %>% 
+  mutate(Scenario = "Scenario 1")
+s2 <- readRDS("describe trial_scenario2.rds") %>% 
+  mutate(Scenario = "Scenario 2")
+s3 <- readRDS("describe trial_scenario3.rds") %>% 
+  mutate(Scenario = "Scenario 3")
+s4 <- readRDS("describe trial_scenario4.rds") %>% 
+  mutate(Scenario = "Scenario 4")
+s5 <- readRDS("describe trial_scenario5.rds") %>% 
+  mutate(Scenario = "Scenario 5")
+s6 <- readRDS("describe trial_scenario6.rds") %>% 
+  mutate(Scenario = "Scenario 6")
+s7 <- readRDS("describe trial_scenario7.rds") %>% 
+  mutate(Scenario = "Scenario 7")
+s8 <- readRDS("describe trial_scenario8.rds") %>% 
+  mutate(Scenario = "Scenario 8")
+s9 <- readRDS("describe trial_scenario9.rds") %>% 
+  mutate(Scenario = "Scenario 9")
+s10 <- readRDS("describe trial_scenario10.rds") %>% 
+  mutate(Scenario = "Scenario 10")
+s11 <- readRDS("describe trial_scenario11.rds") %>% 
+  mutate(Scenario = "Scenario 11")
+s12 <- readRDS("describe trial_scenario12.rds") %>% 
+  mutate(Scenario = "Scenario 12")
+
+# List of data frames
+dfs <- mget(paste0("s", 1:12))
+
+# Combine data frames using do.call and rbind
+combined_df <- do.call(rbind, dfs)
+
+# Function to replace the prefix for the AJ estimates for the composite outcome
+replace_prefix <- function(df, old_prefix, new_prefix) {
+  names(df) <- gsub(paste0("^", old_prefix), new_prefix, names(df))
+  return(df)
+}
+
+combined_df <- replace_prefix(combined_df, "composite_multi_gw", "aj_composite_")
+
+```
+
+# Results
+
+## Clean the Dataset
+
+The code below cleans the dataset for easy review.
+
+```{r}
+
+
+# Clean the dataset for printing
+# - Mutate the variables as desired
+# - Pivot the dataset wider
+
+# Calculate the Number of people after censoring with the percentages
+
+censor <- combined_df %>% 
+  mutate(n_people_cen = n_people - n_censor) %>% 
+  select(Scenario, trt, n_people_cen) %>% 
+  group_by(Scenario) %>% 
+  summarize(percent_n_cen = round((n_people_cen / sum(n_people_cen))*100, 2),
+            n_people_cen = n_people_cen,
+            trt = trt,
+            .groups = "drop")
+
+wider <- left_join(combined_df, censor, by = c("Scenario","trt")) %>% 
+  mutate(n_people = paste0(n_people, " (", percent_n_by_trt, "%)"),
+         n_people_cen = paste0(n_people_cen, " (", percent_n_cen, "%)"),
+         n_censor = paste0(n_censor, " (", percent_censor, "%)"),
+         n_fd_no_censor = paste0(n_fd_no_censor, " (", fd_percent_no_censor, "%)"),
+         n_lb_no_censor = paste0(n_lb_no_censor, " (", lb_percent_no_censor, "%)"),
+         n_fd_censor = paste0(n_fd_censor, " (", fd_percent_censor, "%)"),
+         n_lb_censor = paste0(n_lb_censor, " (", lb_percent_censor, "%)"),
+         n_preeclampsia_no_cen = paste0(n_preeclampsia_no_cen, " (", preec_perc_no_cen, "%)"),
+         n_sga_no_cen = paste0(n_sga_no_cen, " (", sga_perc_no_cen, "%)"),
+         n_preeclampsia_cen = paste0(n_preeclampsia_cen, " (", preec_perc_cen, "%)"),
+         n_sga_cen = paste0(n_sga_cen, " (", sga_perc_cen, "%)")
+         ) %>% 
+  pivot_wider(id_cols = Scenario, names_from = trt, 
+                     values_from = c(n_people, n_people_cen, n_censor, n_fd_no_censor, n_lb_no_censor,
+                                     n_fd_censor, n_lb_censor, n_preeclampsia_no_cen, 
+                                     n_sga_no_cen, n_preeclampsia_cen, n_sga_cen))
+
+```
+
+## Dataset Without Censoring
+
+Below are the descriptive statistics for the cohort at baseline, including those that were censored in analyses.
+
+```{r}
+
+wider %>% 
+  select(Scenario, n_people_0, n_people_1, n_censor_0, n_censor_1, n_fd_no_censor_0, n_fd_no_censor_1, 
+         n_lb_no_censor_0, n_lb_no_censor_1) %>% 
+  knitr::kable(digits = 3, format.args = list(big.mark = ",", scientific = FALSE), col.names = c()) %>% # Trying to add commas to larger numbers
+  kable_classic() %>% 
+  add_header_above(c("Scenario" = 1, "Untreated" = 1, "Treated" = 1, "Untreated" = 1, "Treated" = 1,
+                     "Untreated" = 1, "Treated" = 1, "Untreated" = 1, "Treated" = 1)) %>% 
+  add_header_above(c(" " = 1, "Number of Pregnancies" = 2, "Number of Censored Pregnancies" = 2,
+                     "Number of Fetal Deaths" = 2, "Number of Live Births" = 2)) 
+
+
+# From online resource
+# add commas to big numbers
+# knitr::kable(d, digits = 3, format.args = list(big.mark = ",",
+#   scientific = FALSE))
+
+```
+
+# Dataset With Censoring
+
+Below are the descriptive statistics for the cohort at baseline, only considering those that were not censored over follow-up.
+
+
+```{r}
+
+
+wider %>% 
+  select(Scenario, n_people_cen_0, n_people_cen_1, n_fd_censor_0, n_fd_censor_1, 
+         n_lb_censor_0, n_lb_censor_1) %>% 
+  knitr::kable(digits = 3, format.args = list(big.mark = ",", scientific = FALSE), col.names = c()) %>% # Trying to add commas to larger numbers
+  kable_classic() %>% 
+  add_header_above(c("Scenario" = 1, "Untreated" = 1, "Treated" = 1, "Untreated" = 1, "Treated" = 1,
+                     "Untreated" = 1, "Treated" = 1)) %>% 
+  add_header_above(c(" " = 1, "Number of Pregnancies" = 2, 
+                     "Number of Fetal Deaths" = 2, "Number of Live Births" = 2)) 
+
+```
+
