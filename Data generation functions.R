@@ -247,6 +247,8 @@ resample_outcomes <- function(first_index, phase1_outcomes, phase2){
   # Re-sample outcomes for phase2
   phase2 <- unlist(sample_outcomes_for_id(phase2))
   
+  # Mark suggestion: Rename phase2 here.
+  
   # Now merge them together
   outcomes <- c(phase1, phase2[index:length(phase2)])
   
@@ -299,8 +301,8 @@ preg_outcome <- function(phase2_outcomes, preeclampsia_list, phase3){
   if(first_outcome_index >= first_preeclampsia){
     
     # Regenerate the pregnancy outcome
-    p_fetaldeath <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_fetaldeath
-    p_livebirth <- subset(phase3, gestweek_conception == first_preeclampsia - 1)$p_livebirth
+    p_fetaldeath <- subset(phase3, gestweek_conception == (first_preeclampsia - 1))$p_fetaldeath
+    p_livebirth <- subset(phase3, gestweek_conception == (first_preeclampsia - 1))$p_livebirth
     options <- c("fetaldeath", "livebirth")
     # Assign the corresponding probabilities to each of the potential pregnancy outcomes
     probabilities <- c(p_fetaldeath, p_livebirth)

@@ -15,11 +15,23 @@
 
 ## Identify the cohort that entered the trial
 
+# TO DO: Determine if this trt variable should be remade in the trial participants
+
 trial_cohort <- function(dataset){
   
-  trial <- dataset %>% 
+  trial1 <- dataset %>% 
     bind_rows() %>%
     subset(trial_participant == TRUE) %>% 
+    # Remove the old treatment variable from data generation
+    # This was selected over the entire conception population as opposed to 
+    # only applied in the trial cohort - Creates a lot of imbalance.
+    select(-trt)
+  
+  n <- nrow(trial1)
+  
+  trial <- trial1 %>% 
+    # Create a new treatment indicator in the trial cohort only.
+    mutate(trt = rbinom(n=n, size=1, prob=0.5)) %>% 
     # Identify the observed outcomes
     mutate(preg_outcome_final = ifelse(trt == 1,
                                        preg_outcome_final_trt,
@@ -56,7 +68,7 @@ trial_cohort <- function(dataset){
                                   censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
                                   censor == 0 & preeclampsia == 1 ~ 1,
                                   censor == 0 & preg_outcome_final == "livebirth" & preeclampsia == 0 ~ 2
-                                  ),
+      ),
       # Make a gestational week variable for the composite_multi variable
       composite_multi_gw = ifelse(censor == 1,
                                   first_censoring_gw,
@@ -112,27 +124,6 @@ trial_cohort <- function(dataset){
       # Do not need to make these additional to what is already generated
       
       ### END SGA Outcomes
-      
-      # # Preterm Outcome -- Dropped
-      # 
-      # # Preterm KM variables
-      # preterm_km = ifelse(preg_outcome_final_gw < 35 & censor == 0 &
-      #                       preg_outcome_final == "livebirth", # Previously 37
-      #                     1,
-      #                     0),
-      # preterm_t = ifelse(preterm_km == 1, preg_outcome_final_gw,
-      #                    ifelse(preterm_km == 0 & time >= 35, 35,
-      #                           time)),
-      # # Preterm AJ variables - NEED TO CHECK
-      # preterm_multi = case_when(time >= 35 ~ 0,
-      #                           censor == 1 & time < 35 ~ 0,
-      #                           censor == 0 & preg_outcome_final == "livebirth" & time < 35 ~ 1,
-      #                           censor == 0 & preg_outcome_final == "fetaldeath" & time < 35 ~ 2),
-      # preterm_multi_gw = ifelse(time >= 35, 35, time),
-      # # Make a preterm variable that ignores censoring
-      # preterm_no_censor = ifelse(preg_outcome_final == "livebirth" & preg_outcome_final_gw < 35,
-      #                            1,
-      #                            0)
       
     )
   
@@ -1002,5 +993,135 @@ plot_rd <- function(dataset, outcome_var, title = "") {
 #     ))
 #   
 #   return(hold)
+#   
+# }
+
+
+
+
+# trial_cohort <- function(dataset){
+#   
+#   trial <- dataset %>% 
+#     bind_rows() %>%
+#     subset(trial_participant == TRUE) %>% 
+#     # Identify the observed outcomes
+#     mutate(preg_outcome_final = ifelse(trt == 1,
+#                                        preg_outcome_final_trt,
+#                                        preg_outcome_final_untrt),
+#            preg_outcome_final_gw = ifelse(trt == 1,
+#                                           preg_outcome_final_gw_trt,
+#                                           preg_outcome_final_gw_untrt),
+#            preeclampsia = ifelse(trt == 1,
+#                                  preeclampsia_trt,
+#                                  preeclampsia_untrt),
+#            sga = ifelse(trt == 1,
+#                         sga_trt,
+#                         sga_untrt)) %>% 
+#     rowwise() %>% 
+#     mutate(censor = ifelse(first_censoring_gw < preg_outcome_final_gw & !is.na(first_censoring_gw),
+#                            1,
+#                            0),
+#            time = ifelse(censor == 1,
+#                          first_censoring_gw,
+#                          preg_outcome_final_gw)
+#     ) %>% 
+#     ungroup() %>% 
+#     mutate(
+#       
+#       ### Composite Outcomes
+#       
+#       # Composite outcome for the KM estimator (i.e., censor at anything other than composite outcome)
+#       composite_km = case_when(censor == 1 ~ 0,
+#                                preg_outcome_final == "fetaldeath" & censor == 0 ~ 1,
+#                                preg_outcome_final == "livebirth" & censor == 0 & preeclampsia == 1 ~ 1,
+#                                preg_outcome_final == "livebirth" & censor == 0 & preeclampsia == 0 ~ 0),
+#       # Multinomial composite outcome for AJ estimator
+#       composite_multi = case_when(censor == 1 ~ 0,
+#                                   censor == 0 & preg_outcome_final == "fetaldeath" ~ 1,
+#                                   censor == 0 & preeclampsia == 1 ~ 1,
+#                                   censor == 0 & preg_outcome_final == "livebirth" & preeclampsia == 0 ~ 2
+#       ),
+#       # Make a gestational week variable for the composite_multi variable
+#       composite_multi_gw = ifelse(censor == 1,
+#                                   first_censoring_gw,
+#                                   preg_outcome_final_gw),
+#       # Make composite variable that ignores censoring
+#       composite_no_censor = ifelse(preg_outcome_final == "fetaldeath" | 
+#                                      (preg_outcome_final == "livebirth" & preeclampsia == 1),
+#                                    1,
+#                                    0),
+#       # Potential outcomes for composite outcome
+#       # -- Ignore censoring for the potential outcomes because this is the full outcome
+#       # -- GW will be the same as those for composite_no_censor but only for _trt or _untrt
+#       composite_trt = ifelse(preg_outcome_final_trt == "fetaldeath" | 
+#                                (preg_outcome_final_trt == "livebirth" & preeclampsia_trt == 1),
+#                              1,
+#                              0),
+#       composite_untrt = ifelse(preg_outcome_final_untrt == "fetaldeath" | 
+#                                  (preg_outcome_final_untrt == "livebirth" & preeclampsia_untrt == 1),
+#                                1,
+#                                0),
+#       ### END Composite Outcomes
+#       
+#       # Could look at preeclampsia by itself - would not have to regenerate data. -- Defined in same step as SGA. Or fetal death separately.
+#       
+#       
+#       ### SGA Outcomes
+#       
+#       # Make a SGA variable for the KM estimator
+#       sga_km = ifelse(sga == 1 & censor == 0,
+#                       1,
+#                       0),
+#       # Make SGA variables with fetal death only as a competing event
+#       sga_multi_do = case_when(censor == 1 ~ 0,
+#                                censor == 0 & sga == 1 & preg_outcome_final == "livebirth" ~ 1,
+#                                censor == 0 & preg_outcome_final == "fetaldeath" ~ 2,
+#                                censor == 0 & sga == 0 & preg_outcome_final == "livebirth" ~ 0), 
+#       # Make a gestational week variable for the sga_multi variable
+#       sga_multi_do_gw = ifelse(censor == 1,
+#                                first_censoring_gw,
+#                                preg_outcome_final_gw),
+#       # Make SGA variables with all competing events - 3 level variable
+#       sga_multi_all = case_when(censor == 1 ~ 0,
+#                                 censor == 0 & sga == 1 ~ 1,
+#                                 censor == 0 & preg_outcome_final == "fetaldeath" ~ 2,
+#                                 censor == 0 & sga == 0 & preg_outcome_final == "livebirth" ~ 3), 
+#       # Make a gestational week variable for the sga_multi variable
+#       sga_multi_all_gw = ifelse(censor == 1,
+#                                 first_censoring_gw,
+#                                 preg_outcome_final_gw),
+#       # Make a SGA variable that ignores censoring
+#       sga_no_censor = ifelse(sga == 1, 
+#                              1, 
+#                              0) #,
+#       # Potential Outcomes for SGA
+#       # Do not need to make these additional to what is already generated
+#       
+#       ### END SGA Outcomes
+#       
+#       # # Preterm Outcome -- Dropped
+#       # 
+#       # # Preterm KM variables
+#       # preterm_km = ifelse(preg_outcome_final_gw < 35 & censor == 0 &
+#       #                       preg_outcome_final == "livebirth", # Previously 37
+#       #                     1,
+#       #                     0),
+#       # preterm_t = ifelse(preterm_km == 1, preg_outcome_final_gw,
+#       #                    ifelse(preterm_km == 0 & time >= 35, 35,
+#       #                           time)),
+#       # # Preterm AJ variables - NEED TO CHECK
+#       # preterm_multi = case_when(time >= 35 ~ 0,
+#       #                           censor == 1 & time < 35 ~ 0,
+#       #                           censor == 0 & preg_outcome_final == "livebirth" & time < 35 ~ 1,
+#       #                           censor == 0 & preg_outcome_final == "fetaldeath" & time < 35 ~ 2),
+#       # preterm_multi_gw = ifelse(time >= 35, 35, time),
+#       # # Make a preterm variable that ignores censoring
+#       # preterm_no_censor = ifelse(preg_outcome_final == "livebirth" & preg_outcome_final_gw < 35,
+#       #                            1,
+#       #                            0)
+#       
+#     )
+#   
+#   return(trial)
 #   
 # }

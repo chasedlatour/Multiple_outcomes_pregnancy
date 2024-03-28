@@ -29,6 +29,7 @@ data <- readRDS('scenario1.rds')
 # For testing: data <- readRDS('test.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -62,6 +63,7 @@ rm(list = data_delete)
 data <- readRDS('scenario2.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -96,6 +98,7 @@ rm(list = data_delete)
 data <- readRDS('scenario3.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -129,6 +132,7 @@ rm(list = data_delete)
 data <- readRDS('scenario4.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -163,6 +167,7 @@ rm(list = data_delete)
 data <- readRDS('scenario5.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -198,6 +203,7 @@ rm(list = data_delete)
 data <- readRDS('scenario6.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -230,6 +236,7 @@ rm(list = data_delete)
 data <- readRDS('scenario7.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -264,6 +271,7 @@ rm(list = data_delete)
 data <- readRDS('scenario8.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -297,6 +305,7 @@ rm(list = data_delete)
 data <- readRDS('scenario9.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -330,6 +339,7 @@ rm(list = data_delete)
 data <- readRDS('scenario10.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -363,6 +373,7 @@ rm(list = data_delete)
 data <- readRDS('scenario11.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -397,6 +408,7 @@ rm(list = data_delete)
 data <- readRDS('scenario12.rds')
 
 # Clean the data for analyses
+set.seed(1234)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
