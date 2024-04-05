@@ -23,7 +23,11 @@ This HTML file provides the results for our pregnancy simulation focusing on mod
 
 # Pull In Data
 
+First, we pull in the RDS files in which the simulation results are stored.
+
 ## Descriptive Data
+
+There are individual RDS files for the descriptive analyses of the simulated populations.
 
 ```{r hide=TRUE}
 
@@ -62,6 +66,8 @@ combined_descriptive <- do.call(rbind, dfs)
 ```
 
 ## Analysis Data
+
+Analysis data are stored in separate RDS files for each scenario.
 
 ```{r hide=TRUE}
 
@@ -109,7 +115,7 @@ combined_df <- replace_prefix(combined_df, "composite_multi_gw", "aj_composite_"
 
 ## Functions
 
-We will use these functions to print out the results.
+We will use these functions to print out the analysis results for each of the outcomes.
 
 ```{r}
 
@@ -205,8 +211,7 @@ combined_descriptive %>%
 
 ## Composite Outcome Results
 
-Now, we will print out those results for the composite outcome
-
+Print out analysis results for the composite outcome.
 
 ```{r}
 
@@ -217,8 +222,9 @@ transform(combined_df, "composite")
 
 ```
 
-
 ## SGA: All Competing Events
+
+Print out analysis results for the analyses where fetal death, SGA, and non-SGA delivery are all treated as an outcome state (i.e., censoring only occurs when someone is lost to follow-up).
 
 ```{r}
 
@@ -229,9 +235,9 @@ transform(combined_df, "sga_all")
 
 ```
 
-
 ## SGA: Fetal Death Only as Competing Event
 
+Print out analysis results for the analyses where fetal death and SGA are treated as an outcome state but non-SGA deliveries are treated as censoring.
 
 ```{r}
 
