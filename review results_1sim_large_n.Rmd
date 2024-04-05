@@ -19,7 +19,62 @@ library(tidyverse)
 
 # Overview
 
-This HTML file provides the results for our pregnancy simulation focusing on modeling late-pregnancy outcomes as competing events. Pregnancies were only included in the clinical trial if they reached their 4th week of gestation from conception (6 from LMP).
+This HTML file provides the results for our pregnancy simulation focusing on modeling late-pregnancy outcomes as competing events. 
+
+We intended to simulate the following clinical trial: pregnant individuals with mild-to-moderate chronic hypertension in pregnancy were entered into the trial at their 6th week of gestation (4th from conception). At trial entry, patients were randomized (1:1 ratio) to either initiate or not initiate antihypertensive pharmacotherapy. We then followed individuals until delivery or they were lost to follow-up. We were interested in a primary efficacy outcome (composite endpoint of fetal death or pre-delivery severe preeclampsia) and primary safety outcome (small-for-gestational age infant).
+
+To simulate this study, we discretized simulation at each gestational week. Specifically, we created 1,500,000 individuals who conceived. We then simulated their pregnancy outcomes at each gestational week for 42 weeks under the assumption of treatment and no treatment. The risk of fetal death and delivery depended upon the gestational week and treatment status. Individuals who did not experience fetal death prior to week 4 from conception (i.e., 6 from LMP) were included into the trial and randomized to initiate or not initiate antihypertensive pharmacotherapy. Observed outcomes were determined by a person's treatment value; their counter-factual outcomes were those outcomes they would have experienced if assigned to the treatment arm counter to the one they were actually assigned.
+
+Within each scenario, we analyzed results for the two outcomes using:
+
+- A Kaplan-Meier estimator where competing events were treated as censoring, 
+- An Aalen-Johansen estimator where competing events were part of a multinomial outcome,
+- Simple risk proportions using all simulated data (i.e., ignoring the censoring indicator), and 
+- Simple risk proportions using potential outcomes.
+
+We created 12 scenarios detailed in the table below. 
+
+```{r}
+
+# Data
+data <- data.frame(
+  Scenario = c("Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4", "Scenario 5",
+               "Scenario 6", "Scenario 7", "Scenario 8", "Scenario 9", "Scenario 10",
+               "Scenario 11", "Scenario 12"),
+  Phase2_fd = c("Decreases risk of fetal death", "Increases risk of fetal death",
+                "No impact on risk of fetal death", "Decreases risk of fetal death",
+                "Increases risk of fetal death", "No impact on risk of fetal death",
+                "Decreases risk of fetal death", "Increases risk of fetal death",
+                "No impact on risk of fetal death", "Decreases risk of fetal death",
+                "Increases risk of fetal death", "No impact on risk of fetal death"),
+  Phase2_ga = c("Decreases risk of preterm birth", "See above", "See above",
+                "No effect on risk of preterm birth", "See above", "See above", 
+                "Decreases risk of preterm birth", "See above", "See above", 
+                "No effect on risk of preterm birth", "See above", "See above"),
+  Phase3 = c("Decreases risk of severe preeclampsia", "See above", "See above",
+             "See above", "See above", "See above", 
+             "Decreases risk of severe preeclampsia", "See above", "See above",
+             "See above", "See above", "See above"),
+  Phase4 = c("Decreases risk of small-for-gestational age", "See above",
+             "See above", 
+             "No effect on risk of small-for-gestational age",
+             "See above", "See above", 
+             "No effect on risk of small-for-gestational age", "See above",
+             "See above", 
+             "No effect on risk of small-for-gestational age", 
+             "See above", "See above")
+)
+
+# Print table
+data %>%
+  kable(col.names = c("Scenario", "Phase 2: Fetal death", 
+                      "Phase 2: Gestational age at live birth",
+                      "Phase 3: Severe preeclampsia",
+                      "Phase 4: Small-for-gestational age")) %>%
+    kable_classic() %>%
+    add_header_above(c(" " = 1, "Effect of Treatment on..." = 4))
+
+```
 
 # Pull In Data
 
@@ -189,7 +244,7 @@ transform <- function(dset, var_name) {
 
 ## Descriptive Results
 
-First, we describe the number of participants in each of the trials by treatment arm.
+First, we describe the number of participants in each of the trials by treatment arm and the number of patients that were censored (i.e., lost to follow-up) in each arm. Of note, censoring was intended to be uninformative: everyone had a 1% probability of being censored each gestational week. However, a person was only marked as censored if their censoring occurred prior to an outcome.
 
 ```{r}
 
