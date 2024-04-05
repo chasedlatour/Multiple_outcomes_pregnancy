@@ -21,9 +21,47 @@ library(tidyverse)
 
 This HTML file provides the results for our pregnancy simulation focusing on modeling late-pregnancy outcomes as competing events. Pregnancies were only included in the clinical trial if they reached their 4th week of gestation from conception (6 from LMP).
 
-# Set Up
+# Pull In Data
 
-Call in the necessary libraries, files, etc. that we will need.
+## Descriptive Data
+
+```{r hide=TRUE}
+
+# Call in the data that we need
+s1 <- readRDS("describe trial_scenario1.rds") %>% 
+  mutate(Scenario = "Scenario 1")
+s2 <- readRDS("describe trial_scenario2.rds") %>% 
+  mutate(Scenario = "Scenario 2")
+s3 <- readRDS("describe trial_scenario3.rds") %>% 
+  mutate(Scenario = "Scenario 3")
+s4 <- readRDS("describe trial_scenario4.rds") %>% 
+  mutate(Scenario = "Scenario 4")
+s5 <- readRDS("describe trial_scenario5.rds") %>% 
+  mutate(Scenario = "Scenario 5")
+s6 <- readRDS("describe trial_scenario6.rds") %>% 
+  mutate(Scenario = "Scenario 6")
+s7 <- readRDS("describe trial_scenario7.rds") %>% 
+  mutate(Scenario = "Scenario 7")
+s8 <- readRDS("describe trial_scenario8.rds") %>% 
+  mutate(Scenario = "Scenario 8")
+s9 <- readRDS("describe trial_scenario9.rds") %>% 
+  mutate(Scenario = "Scenario 9")
+s10 <- readRDS("describe trial_scenario10.rds") %>% 
+  mutate(Scenario = "Scenario 10")
+s11 <- readRDS("describe trial_scenario11.rds") %>% 
+  mutate(Scenario = "Scenario 11")
+s12 <- readRDS("describe trial_scenario12.rds") %>% 
+  mutate(Scenario = "Scenario 12")
+
+# List of data frames
+dfs <- mget(paste0("s", 1:12))
+
+# Combine data frames using do.call and rbind
+combined_descriptive <- do.call(rbind, dfs)
+
+```
+
+## Analysis Data
 
 ```{r hide=TRUE}
 
@@ -69,11 +107,9 @@ combined_df <- replace_prefix(combined_df, "composite_multi_gw", "aj_composite_"
 
 ```
 
-# Results
-
 ## Functions
 
-We will use these functions to print out the results below.
+We will use these functions to print out the results.
 
 ```{r}
 
@@ -140,6 +176,30 @@ transform <- function(dset, var_name) {
   
   return(dset2)
 }
+
+```
+
+# Results
+
+## Descriptive Results
+
+First, we describe the number of participants in each of the trials by treatment arm.
+
+```{r}
+
+combined_descriptive %>% 
+  select(Scenario, trt, n_people, percent_n_by_trt, n_censor, percent_censor) %>% 
+  mutate(n = paste0(n_people, " (", percent_n_by_trt, "%)"),
+         cens = paste0(n_censor, " (", percent_censor, "%)")) %>% 
+  pivot_wider(id_cols = Scenario,
+              names_from = trt,
+              values_from = c(n, cens)) %>% 
+  kable(col.names = c("Scenario", "Non-Initiators", "Initiators", 
+                      "Non-Initiators", "Initiators")) %>%
+  kable_classic() %>%
+  add_header_above(c(" " = 1, "Number of People (% of Trial Population)" = 2,
+                     "Number of Censored Individuals (% of Trial Arm)" = 2))
+
 
 ```
 
