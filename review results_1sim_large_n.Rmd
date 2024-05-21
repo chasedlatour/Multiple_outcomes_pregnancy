@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(kableExtra)
 library(tidyverse)
+library(ggplot2)
 
 ```
 
@@ -168,6 +169,57 @@ combined_df <- replace_prefix(combined_df, "composite_multi_gw", "aj_composite_"
 
 ```
 
+## Figure Data
+
+Prep the analysis data for use in the figures.
+
+```{r}
+
+
+# Make a factor version of Scenario
+
+combined_df$scenario <- factor(combined_df$Scenario)
+
+# Make the dataset longer
+figure_data <- combined_df %>% 
+  select(-Scenario) %>% 
+  group_by(scenario) %>% 
+  pivot_longer(
+    cols = !scenario,
+    names_to = "analysis",
+    values_to = "value"
+  ) %>% 
+  mutate(
+    Analysis = case_when(startsWith(analysis, "km") ~ "KM",
+                         startsWith(analysis, "aj_sga_all") ~ "AJ: All competing events",
+                         startsWith(analysis, "aj_sga_fd") ~ "AJ: Fetal death only",
+                         startsWith(analysis, "aj") ~ "AJ",
+                         startsWith(analysis, "no_censor") ~ "No Censoring",
+                         startsWith(analysis, "potential") ~ "Truth"),
+    Outcome = case_when(grepl("composite", analysis, ignore.case = TRUE) ~ "Composite",
+                        grepl("sga", analysis, ignore.case = TRUE) ~ "SGA")
+  ) %>%
+  # Filter out what don't need for now
+  filter(Analysis != "No Censoring") %>% 
+  filter(!grepl("rr", analysis, ignore.case = TRUE)) %>% 
+  filter(!startsWith(analysis, "km_sga_fd")) %>% 
+  mutate(
+    Estimate = case_when(grepl("r_0", analysis) ~ "risk_non_initiators",
+                         grepl("r_1", analysis) ~ "risk_initiators",
+                         grepl("rd_lcl", analysis) ~ "rd_lcl",
+                         grepl("rd_ucl", analysis) ~ "rd_ucl",
+                         grepl("rd", analysis) ~ "rd",
+                         grepl("untrt", analysis) ~ "risk_non_initiators",
+                         grepl("trt", analysis) ~ "risk_initiators")
+  ) %>% 
+  pivot_wider(
+    id_cols = c(scenario, Analysis, Outcome),
+    names_from = Estimate,
+    values_from = value
+  )
+
+```
+
 ## Functions
 
 We will use these functions to print out the analysis results for each of the outcomes.
@@ -277,6 +329,63 @@ transform(combined_df, "composite")
 
 ```
 
+## Composite Figure
+
+Make a figure of the results for the composite outcome.
+
+```{r, fig.height = 10}
+
+figure_efficacy <- figure_data %>% 
+  filter(Outcome == "Composite")
+
+# Convert to factor for ordering
+figure_efficacy$scenario <- factor(figure_efficacy$scenario, 
+                                   levels = unique(figure_efficacy$scenario))
+figure_efficacy$Analysis <- factor(figure_efficacy$Analysis, 
+                                   levels = rev(unique(figure_efficacy$Analysis)))
+
+# Create the plot
+ggplot(figure_efficacy) +
+  # Incidence bars for Drug A and Comparator
+  geom_bar(aes(y = Analysis, x = risk_initiators, fill = "Initiators"), stat = "identity", 
+           position = position_nudge(y = 0.2, x = 0.2), width = 0.4, alpha = 0.7) +
+  geom_bar(aes(y = Analysis, x = risk_non_initiators, fill = "Non-Initiators"), stat = "identity", 
+           position = position_nudge(y = -0.2, x = 0.2), width = 0.4, alpha = 0.4) +
+  # Points and error bars for Risk Difference
+  geom_point(aes(y = Analysis, x = rd), 
+             #position = position_dodge(width = 0.8),
+             #position = position_nudge(x = 0.7)
+             ) +
+  geom_errorbar(aes(y = Analysis, xmin = rd_lcl, xmax = rd_ucl), 
+                #position = position_dodge(width = 0.8), 
+                #position = position_nudge(x = 0.7),
+                width = 0.2) +
+  facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
+  # Customizing the axes
+  scale_x_continuous(
+    #name = "Incidence (%)",
+    limits = c(-0.1, 0.80),
+    breaks = seq(-0.1, 0.1, by = 0.1),
+    sec.axis = sec_axis(~ ., #name = "Risk Difference (%)",
+                        breaks = seq(0.2, 0.8, 0.2),
+                        labels = c(0, 0.2, 0.4, 0.6))
+  )  +
+  #geom_vline(xintercept = 0.7) +
+  #scale_fill_manual(values = c("Drug A" = "blue", "Comparator" = "red")) +
+  #scale_color_manual(values = c("Female" = "blue", "Male" = "red")) +
+  labs(y = NULL, 
+       x = NULL,
+       fill = "Treatment Group", 
+       ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(strip.placement = "outside") +
+  geom_rect(xmin = -0.1, xmax = 0.1,
+            ymin = -0.5, ymax = 3.5,
+            alpha = 0.2)
+
+```
+
 ## SGA: All Competing Events
 
 Print out analysis results for the analyses where fetal death, SGA, and non-SGA delivery are all treated as an outcome state (i.e., censoring only occurs when someone is lost to follow-up).
@@ -300,3 +409,58 @@ transform(combined_df, "sga_fd")
 
 ```
 
+# SGA Figure
+
+Make a figure of the SGA results
+
+```{r, fig.height = 10}
+
+figure_sga <- figure_data %>% 
+  filter(Outcome == "SGA")
+
+# Convert to factor for ordering
+figure_sga$scenario <- factor(figure_sga$scenario,
+                              levels = unique(figure_sga$scenario))
+figure_sga$Analysis <- factor(figure_sga$Analysis, 
+                              levels = c("Truth", "AJ: All competing events", "AJ: Fetal death only", 
+                                         "KM"))
+
+# Create the plot
+ggplot(figure_sga) +
+  # Incidence bars for Drug A and Comparator
+  geom_bar(aes(y = Analysis, x = risk_initiators, fill = "Initiators"), stat = "identity", 
+           position = position_nudge(y = 0.2, x = 0.4), width = 0.4, alpha = 0.7) +
+  geom_bar(aes(y = Analysis, x = risk_non_initiators, fill = "Non-Initiators"), stat = "identity", 
+           position = position_nudge(y = -0.2, x = 0.4), width = 0.4, alpha = 0.4) +
+  # Points and error bars for Risk Difference
+  geom_point(aes(y = Analysis, x = rd),
+             #position = position_dodge(width = 0.8),
+             #position = position_nudge(x = 1.1)
+             ) +
+  geom_errorbar(aes(y = Analysis, xmin = rd_lcl, xmax = rd_ucl),
+                #position = position_dodge(width = 0.8),
+                #position = position_nudge(x = 1.1),
+                width = 0.2) +
+  facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
+  # Customizing the axes
+  scale_x_continuous(
+    #name = "Incidence (%)",
+    limits = c(-0.3, 1.2),
+    breaks = seq(-0.3, 0.3, by = 0.1),
+    labels = c(-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3),
+    sec.axis = sec_axis(~ ., #name = "Risk Difference (%)",
+                        breaks = seq(0.4, 1.2, by = 0.2),
+                        labels = c(0, 0.2, 0.4, 0.6, 0.8))
+  )  +
+  labs(y = NULL, 
+       x = NULL,
+       fill = "Treatment Group", 
+       ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(strip.placement = "outside") +
+  geom_rect(xmin = -0.3, xmax = 0.31,
+            ymin = -0.5, ymax = 4.5,
+            alpha = 0.2)
+
+```
