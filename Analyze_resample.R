@@ -27,37 +27,6 @@ source('analysis functions.R')
 
 
 
-## Re-do resample for scenario 12
-
-for (i in 12:12) { # Accidentally overwrote 12
-  scenario_name <- paste0("scenario", i)
-  resample_name <- paste0("resample_", scenario_name, ".rds")
-  
-  # Pull in the generated data
-  scenario <- readRDS(paste0(scenario_name, ".rds"))
-  
-  # Set seed so that it's the same for all
-  set.seed(1234)
-  
-  # Use purrr::map to create a list of resampled datasets
-  resampled_datasets <- map(1:num_resamples, ~resample_data(subset(scenario[[1]], 
-                                                                   trial_participant == TRUE)))
-  # Combine all resampled datasets into one
-  combined_resampled_data <- bind_rows(resampled_datasets, .id = "resample_id") 
-  
-  # Save the dataset for the current scenario
-  saveRDS(combined_resampled_data, resample_name)
-  
-  # Delete datasets so that local environment doesn't get too large
-  rm(scenario, resampled_datasets, combined_resampled_data)
-  gc() # Call garbage collection to free up memory
-}
-
-
-
-
-
-
 
 
 
