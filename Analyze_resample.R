@@ -44,8 +44,6 @@ for (i in 1:12) {
   # Pull in the generated data
   scenario <- readRDS(paste0(scenario_name, ".rds"))
   
-  scenario <- test
-  
   # Set seed so that it's the same for all. Important now for assigning treatment
   set.seed(1234)
   
