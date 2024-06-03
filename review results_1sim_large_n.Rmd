@@ -127,30 +127,58 @@ Analysis data are stored in separate RDS files for each scenario.
 
 ```{r hide=TRUE}
 
+### REPLACE THIS WITH WHATEVER INPUT DATASET DESIRED
+
+ResampledData <- FALSE 
+
 # Call in the data that we need
-s1 <- readRDS("analyses_scenario1.rds") %>% 
+s1 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario1.rds",
+                     "analyses_scenario1.rds")) %>% 
   mutate(Scenario = "Scenario 1")
-s2 <- readRDS("analyses_scenario2.rds") %>% 
+s2 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario2.rds",
+                     "analyses_scenario2.rds")) %>% 
   mutate(Scenario = "Scenario 2")
-s3 <- readRDS("analyses_scenario3.rds") %>% 
+s3 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario3.rds",
+                     "analyses_scenario3.rds")) %>% 
   mutate(Scenario = "Scenario 3")
-s4 <- readRDS("analyses_scenario4.rds") %>% 
+s4 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario4.rds",
+                     "analyses_scenario4.rds")) %>% 
   mutate(Scenario = "Scenario 4")
-s5 <- readRDS("analyses_scenario5.rds") %>% 
+s5 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario5.rds",
+                     "analyses_scenario5.rds")) %>% 
   mutate(Scenario = "Scenario 5")
-s6 <- readRDS("analyses_scenario6.rds") %>% 
+s6 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario6.rds",
+                     "analyses_scenario6.rds")) %>% 
   mutate(Scenario = "Scenario 6")
-s7 <- readRDS("analyses_scenario7.rds") %>% 
+s7 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario7.rds",
+                     "analyses_scenario7.rds")) %>% 
   mutate(Scenario = "Scenario 7")
-s8 <- readRDS("analyses_scenario8.rds") %>% 
+s8 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario8.rds",
+                     "analyses_scenario8.rds")) %>% 
   mutate(Scenario = "Scenario 8")
-s9 <- readRDS("analyses_scenario9.rds") %>% 
+s9 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario9.rds",
+                     "analyses_scenario9.rds")) %>% 
   mutate(Scenario = "Scenario 9")
-s10 <- readRDS("analyses_scenario10.rds") %>% 
+s10 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario10.rds",
+                     "analyses_scenario10.rds")) %>% 
   mutate(Scenario = "Scenario 10")
-s11 <- readRDS("analyses_scenario11.rds") %>% 
+s11 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario11.rds",
+                     "analyses_scenario11.rds")) %>% 
   mutate(Scenario = "Scenario 11")
-s12 <- readRDS("analyses_scenario12.rds") %>% 
+s12 <- readRDS(ifelse(ResampledData,
+                     "resampled_analyses_scenario12.rds",
+                     "analyses_scenario12.rds")) %>% 
   mutate(Scenario = "Scenario 12")
 
 # List of data frames
