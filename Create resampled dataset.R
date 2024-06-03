@@ -42,9 +42,20 @@ for (i in 1:12){
   readOrigData <- paste0("analyses_scenario", i, ".rds")
   saveData <- paste0("resampled_analyses_scenario", i, ".rds")
   
+  # Get val from normal dist for CIs
+  z <- qnorm(0.975)
+  
   # Read in the data
   scenario <- readRDS(readResampData) %>% 
-    replace_prefix("composite_multi_gw","aj_composite_")
+    replace_prefix("composite_multi_gw","aj_composite_") %>% 
+    # Calc standard errors.
+    mutate(km_composite_se = (`km_composite_ rd_ucl` - `km_composite_ rd_lcl`)/(2*z),
+           aj_composite_se = (`aj_composite_ rd_ucl` - `aj_composite_ rd_lcl`) / (2*z),
+           km_sga_se = (`aj_composite_ rd_ucl` - `km_composite_ rd_lcl`)/(2*z),
+           aj_sga_fd_se = (`aj_sga_fd_ rd_ucl` - `aj_sga_fd_ rd_lcl`)/(2*z),
+           aj_sga_all_se = (`aj_sga_all_ rd_ucl` - `aj_sga_all_ rd_lcl`)/(2*z))
+    
+  
   
   # Calculate the standard errors and means
   stderrs <- scenario %>% 
@@ -59,15 +70,20 @@ for (i in 1:12){
       aj_sga_all_mean = mean(`aj_sga_all_ rd`),
       
       # Standard Errors
+      km_composite_rd_se2 = mean(km_composite_se[is.finite(km_composite_se)]),
       km_composite_rd_se = sd(`km_composite_ rd`),
+      composite_multi_gw_se2 = mean(aj_composite_se[is.finite(aj_composite_se)]),
       composite_multi_gw_se = sd(`aj_composite_ rd`),
+      km_sga_fd_se2 = mean(km_sga_se[is.finite(km_sga_se)]),
       km_sga_fd_se = sd(`km_sga_all_ rd`),
+      aj_sga_fd_se2 = mean(aj_sga_fd_se[is.finite(aj_sga_fd_se)]),
       aj_sga_fd_se = sd(`aj_sga_fd_ rd`),
       km_sga_all_se = sd(`km_sga_all_ rd`),
+      aj_sga_all_se2 = mean(aj_sga_all_se[is.finite(aj_sga_all_se)]),
       aj_sga_all_se = sd(`aj_sga_all_ rd`)
     )
   
-  z <- qnorm(0.975)
+  
   
   # Revise the CI values
   
@@ -97,8 +113,6 @@ for (i in 1:12){
   
   saveRDS(analyses, saveData)
   
+  saveRDS(stderrs, paste0('stderrs_', saveData))
+  
 }
-
-
-######### TO DO:
-# Check this. CIs are REALLY large now. Basically, just make sure that the average of the standard error in each resampled sample is equal to the estimate that we derive via the method above (or at least approx). See Jess email.
