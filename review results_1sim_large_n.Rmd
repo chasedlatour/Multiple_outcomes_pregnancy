@@ -129,7 +129,7 @@ Analysis data are stored in separate RDS files for each scenario.
 
 ### REPLACE THIS WITH WHATEVER INPUT DATASET DESIRED
 
-ResampledData <- FALSE 
+ResampledData <- TRUE 
 
 # Call in the data that we need
 s1 <- readRDS(ifelse(ResampledData,

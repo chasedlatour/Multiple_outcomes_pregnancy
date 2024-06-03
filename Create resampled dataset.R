@@ -46,15 +46,25 @@ for (i in 1:12){
   scenario <- readRDS(readResampData) %>% 
     replace_prefix("composite_multi_gw","aj_composite_")
   
-  # Calculate the standard errors
+  # Calculate the standard errors and means
   stderrs <- scenario %>% 
     summarize(
-      km_composite_rd_se = sd(`km_composite_ rd`)/sqrt(n()),
-      composite_multi_gw_se = sd(`aj_composite_ rd`)/sqrt(n()),
-      km_sga_fd_se = sd(`km_sga_all_ rd`)/sqrt(n()),
-      aj_sga_fd_se = sd(`aj_sga_fd_ rd`)/sqrt(n()),
-      km_sga_all_se = sd(`km_sga_all_ rd`)/sqrt(n()),
-      aj_sga_all_se = sd(`aj_sga_all_ rd`)/sqrt(n())
+      
+      #Means
+      km_composite_mean = mean(`km_composite_ rd`),
+      composite_mean = mean(`aj_composite_ rd`),
+      km_sga_fd_mean = mean(`km_sga_all_ rd`),
+      aj_sga_fd_mean = mean(`aj_sga_fd_ rd`),
+      km_sga_all_mean = mean(`km_sga_all_ rd`),
+      aj_sga_all_mean = mean(`aj_sga_all_ rd`),
+      
+      # Standard Errors
+      km_composite_rd_se = sd(`km_composite_ rd`),
+      composite_multi_gw_se = sd(`aj_composite_ rd`),
+      km_sga_fd_se = sd(`km_sga_all_ rd`),
+      aj_sga_fd_se = sd(`aj_sga_fd_ rd`),
+      km_sga_all_se = sd(`km_sga_all_ rd`),
+      aj_sga_all_se = sd(`aj_sga_all_ rd`)
     )
   
   z <- qnorm(0.975)
@@ -63,20 +73,26 @@ for (i in 1:12){
   
   analyses <- readRDS(readOrigData) %>% 
     mutate(
-      # Composite Outcome
-      `km_composite_ rd_lcl` = `km_composite_ rd` - z*stderrs$km_composite_rd_se[[1]],
-      `km_composite_ rd_ucl` = `km_composite_ rd` + z*stderrs$km_composite_rd_se[[1]],
-      `composite_multi_gw rd_lcl` = `composite_multi_gw rd` - z*stderrs$composite_multi_gw_se[[1]],
-      `composite_multi_gw rd_ucl` = `composite_multi_gw rd` + z*stderrs$composite_multi_gw_se[[1]],
-      # SGA -- safety outcome
-      `km_sga_fd_ rd_lcl` = `km_sga_fd_ rd` - z*stderrs$km_sga_fd_se[[1]],
-      `km_sga_fd_ rd_ucl` = `km_sga_fd_ rd` + z*stderrs$km_sga_fd_se[[1]],
-      `km_sga_all_ rd_lcl` = `km_sga_all_ rd` - z*stderrs$km_sga_all_se[[1]],
-      `km_sga_all_ rd_ucl` = `km_sga_all_ rd` + z*stderrs$km_sga_all_se[[1]],
-      `aj_sga_fd_ rd_lcl` = `aj_sga_fd_ rd` - z*stderrs$aj_sga_fd_se[[1]],
-      `aj_sga_fd_ rd_ucl` = `aj_sga_fd_ rd` + z*stderrs$aj_sga_fd_se[[1]],
-      `aj_sga_all_ rd_lcl` = `aj_sga_all_ rd` - z*stderrs$aj_sga_all_se[[1]],
-      `aj_sga_all_ rd_ucl` = `aj_sga_all_ rd` + z*stderrs$aj_sga_all_se[[1]]
+      ## Estimates
+      `km_composite_ rd` = stderrs$km_composite_mean[[1]],
+      `composite_multi_gw rd` = stderrs$composite_mean[[1]],
+      `km_sga_fd_ rd` = stderrs$km_sga_fd_mean[[1]],
+      `km_sga_all_ rd` = stderrs$km_sga_all_mean[[1]],
+      `aj_sga_fd_ rd` = stderrs$aj_sga_fd_mean[[1]],
+      `aj_sga_all_ rd` = stderrs$aj_sga_all_mean[[1]],
+      ## CIs
+      `km_composite_ rd_lcl` = stderrs$km_composite_mean[[1]] - z*stderrs$km_composite_rd_se[[1]],
+      `km_composite_ rd_ucl` = stderrs$km_composite_mean[[1]] + z*stderrs$km_composite_rd_se[[1]],
+      `composite_multi_gw rd_lcl` = stderrs$composite_mean[[1]] - z*stderrs$composite_multi_gw_se[[1]],
+      `composite_multi_gw rd_ucl` = stderrs$composite_mean[[1]] + z*stderrs$composite_multi_gw_se[[1]],
+      `km_sga_fd_ rd_lcl` = stderrs$km_sga_fd_mean[[1]] - z*stderrs$km_sga_fd_se[[1]],
+      `km_sga_fd_ rd_ucl` = stderrs$km_sga_fd_mean[[1]] + z*stderrs$km_sga_fd_se[[1]],
+      `km_sga_all_ rd_lcl` = stderrs$km_sga_all_mean[[1]] - z*stderrs$km_sga_all_se[[1]],
+      `km_sga_all_ rd_ucl` = stderrs$km_sga_all_mean[[1]] + z*stderrs$km_sga_all_se[[1]],
+      `aj_sga_fd_ rd_lcl` = stderrs$aj_sga_fd_mean[[1]] - z*stderrs$aj_sga_fd_se[[1]],
+      `aj_sga_fd_ rd_ucl` = stderrs$aj_sga_fd_mean[[1]] + z*stderrs$aj_sga_fd_se[[1]],
+      `aj_sga_all_ rd_lcl` = stderrs$aj_sga_all_mean[[1]] - z*stderrs$aj_sga_all_se[[1]],
+      `aj_sga_all_ rd_ucl` = stderrs$aj_sga_all_mean[[1]] + z*stderrs$aj_sga_all_se[[1]]
     )
   
   saveRDS(analyses, saveData)
@@ -84,52 +100,5 @@ for (i in 1:12){
 }
 
 
-
-
-###################################################
-# Read in the data
-###################################################
-
-scenario1 <- readRDS("resample_resample_scenario1_anal.rds") %>% 
-  replace_prefix("composite_multi_gw","aj_composite_")
-
-
-
-
-###################################################
-# Calculate the standard errors
-###################################################
-
-stderrs <- scenario1 %>% 
-  summarize(
-    km_composite_rd_se = sd(`km_composite_ rd`)/sqrt(n()),
-    composite_multi_gw_se = sd(`aj_composite_ rd`)/sqrt(n()),
-    km_sga_fd_se = sd(`km_sga_all_ rd`)/sqrt(n()),
-    aj_sga_fd_se = sd(`aj_sga_fd_ rd`)/sqrt(n()),
-    km_sga_all_se = sd(`km_sga_all_ rd`)/sqrt(n()),
-    aj_sga_all_se = sd(`aj_sga_all_ rd`)/sqrt(n())
-    )
-
-z <- qnorm(0.975)
-
-# Revise the CI values
-
-analyses_scenario1 <- readRDS("analyses_scenario1.rds") %>% 
-  mutate(
-    # Composite Outcome
-    `km_composite_ rd_lcl` = `km_composite_ rd` - z*stderrs$km_composite_rd_se[[1]],
-    `km_composite_ rd_ucl` = `km_composite_ rd` + z*stderrs$km_composite_rd_se[[1]],
-    `composite_multi_gw rd_lcl` = `composite_multi_gw rd` - z*stderrs$composite_multi_gw_se[[1]],
-    `composite_multi_gw rd_ucl` = `composite_multi_gw rd` + z*stderrs$composite_multi_gw_se[[1]],
-    # SGA -- safety outcome
-    `km_sga_fd_ rd_lcl` = `km_sga_fd_ rd` - z*stderrs$km_sga_fd_se[[1]],
-    `km_sga_fd_ rd_ucl` = `km_sga_fd_ rd` + z*stderrs$km_sga_fd_se[[1]],
-    `km_sga_all_ rd_lcl` = `km_sga_all_ rd` - z*stderrs$km_sga_all_se[[1]],
-    `km_sga_all_ rd_ucl` = `km_sga_all_ rd` + z*stderrs$km_sga_all_se[[1]],
-    `aj_sga_fd_ rd_lcl` = `aj_sga_fd_ rd` - z*stderrs$aj_sga_fd_se[[1]],
-    `aj_sga_fd_ rd_ucl` = `aj_sga_fd_ rd` + z*stderrs$aj_sga_fd_se[[1]],
-    `aj_sga_all_ rd_lcl` = `aj_sga_all_ rd` - z*stderrs$aj_sga_all_se[[1]],
-    `aj_sga_all_ rd_ucl` = `aj_sga_all_ rd` + z*stderrs$aj_sga_all_se[[1]]
-    )
-
-saveRDS(analyses_scenario1, "resampled_analyses_scenario1.rds")
+######### TO DO:
+# Check this. CIs are REALLY large now. Basically, just make sure that the average of the standard error in each resampled sample is equal to the estimate that we derive via the method above (or at least approx). See Jess email.
