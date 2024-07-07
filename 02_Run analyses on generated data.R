@@ -14,7 +14,7 @@ library(Epi)
 library(kableExtra)
 
 ## Load in the functions that need.
-source('analysis functions.R')
+source('00_analysis functions.R')
 
 
 
@@ -29,7 +29,7 @@ data <- readRDS('scenario1.rds')
 # For testing: data <- readRDS('test.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -41,15 +41,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario1.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario1.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -63,7 +69,7 @@ rm(list = data_delete)
 data <- readRDS('scenario2.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -75,17 +81,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario2.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario2.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
-
+gc()
 
 
 
@@ -98,7 +108,7 @@ rm(list = data_delete)
 data <- readRDS('scenario3.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -110,16 +120,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario3.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario3.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
+gc()
 
 
 
@@ -132,7 +147,7 @@ rm(list = data_delete)
 data <- readRDS('scenario4.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -144,16 +159,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario4.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario4.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
+gc()
 
 
 
@@ -167,7 +187,7 @@ rm(list = data_delete)
 data <- readRDS('scenario5.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -179,17 +199,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario5.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario5.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
-
+gc()
 
 
 
@@ -203,7 +227,7 @@ rm(list = data_delete)
 data <- readRDS('scenario6.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -215,16 +239,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario6.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario6.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
+gc()
 
 
 
@@ -236,7 +265,7 @@ rm(list = data_delete)
 data <- readRDS('scenario7.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -248,16 +277,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario7.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario7.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
+gc()
 
 
 
@@ -271,7 +305,7 @@ rm(list = data_delete)
 data <- readRDS('scenario8.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -283,15 +317,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario8.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario8.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -305,7 +345,7 @@ rm(list = data_delete)
 data <- readRDS('scenario9.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -317,15 +357,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario9.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario9.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -339,7 +385,7 @@ rm(list = data_delete)
 data <- readRDS('scenario10.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -351,16 +397,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario10.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario10.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
-
+gc()
 
 
 
@@ -373,7 +424,7 @@ rm(list = data_delete)
 data <- readRDS('scenario11.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -385,15 +436,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario11.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario11.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -408,7 +465,7 @@ rm(list = data_delete)
 data <- readRDS('scenario12.rds')
 
 # Clean the data for analyses
-set.seed(1234)
+set.seed(192384756)
 trial <- trial_cohort(data)
 
 ## Describe the cleaned data
@@ -420,15 +477,21 @@ trial_outcomes <- describe_outcomes(trial)
 saveRDS(trial_outcomes, "describe outcomes_scenario12.rds")
 
 ## Analyze the cleaned data
-analyses <- clean_analyze(trial)
+split_data <- split(trial, trial$sim_id)
+split_analyses <- lapply(split_data, clean_analyze)
+analyses <- do.call(rbind, split_analyses) %>% 
+  mutate(sim_id = row_number())
+
 saveRDS(analyses, "analyses_scenario12.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("data", "trial", "trial_descriptive", 
-                 "trial_outcomes","analyses")
+                 "trial_outcomes","split_data", "split_analyses",
+                 "analyses")
 
 rm(list = data_delete)
+gc()
 
 
 

@@ -1,0 +1,117 @@
+---
+title: "Analyze Data from Monte Carlo Simulation"
+author: "Chase Latour"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Pull in the Data
+
+```{r}
+
+# CHANGE THE 2 TO 12
+
+
+# Descriptive data from each of the scenarios
+
+for (x in 1:2) {
+  # Construct the file name
+  file_name <- paste0("describe trial_scenario", x, ".rds")
+  
+  # Read the RDS file
+  dataset <- readRDS(file_name)
+  
+  # Add the new variable 'scenario'
+  dataset$scenario <- x
+  
+  # Construct the variable name
+  var_name <- paste0("describe_scenario", x)
+  
+  # Assign the dataset to the dynamically named variable
+  assign(var_name, dataset)
+  
+}
+
+combined_describe_trial <- bind_rows(describe_scenario1, describe_scenario2)
+
+
+
+# Analysis data for each of the scenarios
+
+for (x in 1:2) {
+  # Construct the file name
+  file_name <- paste0("analyses_scenario", x, ".rds")
+  
+  # Read the RDS file
+  dataset <- readRDS(file_name)
+  
+  # Add the new variable 'scenario'
+  dataset$scenario <- x
+  
+  # Construct the variable name
+  var_name <- paste0("analyses_scenario", x)
+  
+  # Assign the dataset to the dynamically named variable
+  assign(var_name, dataset)
+}
+
+combined_analyses <- bind_rows(analyses_scenario1, analyses_scenario2)
+
+```
+
+# Descriptives of Trial Population
+
+```{r}
+
+combined_describe_trial %>% 
+  group_by(scenario, trt) %>% 
+  
+  
+  # Clean the dataset for printing
+# - Mutate the variables as desired
+# - Pivot the dataset wider
+
+# Calculate the Number of people after censoring with the percentages
+
+censor <- combined_df %>% 
+  mutate(n_people_cen = n_people - n_censor) %>% 
+  select(Scenario, trt, n_people_cen) %>% 
+  group_by(Scenario) %>% 
+  summarize(percent_n_cen = round((n_people_cen / sum(n_people_cen))*100, 2),
+            n_people_cen = n_people_cen,
+            trt = trt,
+            .groups = "drop")
+
+wider <- left_join(combined_df, censor, by = c("Scenario","trt")) %>% 
+  mutate(n_people = paste0(n_people, " (", percent_n_by_trt, "%)"),
+         n_people_cen = paste0(n_people_cen, " (", percent_n_cen, "%)"),
+         n_censor = paste0(n_censor, " (", percent_censor, "%)"),
+         n_fd_no_censor = paste0(n_fd_no_censor, " (", fd_percent_no_censor, "%)"),
+         n_lb_no_censor = paste0(n_lb_no_censor, " (", lb_percent_no_censor, "%)"),
+         n_fd_censor = paste0(n_fd_censor, " (", fd_percent_censor, "%)"),
+         n_lb_censor = paste0(n_lb_censor, " (", lb_percent_censor, "%)"),
+         n_preeclampsia_no_cen = paste0(n_preeclampsia_no_cen, " (", preec_perc_no_cen, "%)"),
+         n_sga_no_cen = paste0(n_sga_no_cen, " (", sga_perc_no_cen, "%)"),
+         n_preeclampsia_cen = paste0(n_preeclampsia_cen, " (", preec_perc_cen, "%)"),
+         n_sga_cen = paste0(n_sga_cen, " (", sga_perc_cen, "%)")
+         ) %>% 
+  pivot_wider(id_cols = Scenario, names_from = trt, 
+                     values_from = c(n_people, n_people_cen, n_censor, n_fd_no_censor, n_lb_no_censor,
+                                     n_fd_censor, n_lb_censor, n_preeclampsia_no_cen, 
+                                     n_sga_no_cen, n_preeclampsia_cen, n_sga_cen))
+
+
+
+```
+
+# Descriptives of Trial Outcomes
+
+## Dataset Without Censoring
+
+## Dataset With Censoring
+
+# Results

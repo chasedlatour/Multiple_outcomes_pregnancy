@@ -138,7 +138,7 @@ trial_cohort <- function(dataset){
 describe_trial <- function(dataset){
   
   tib <- dataset %>% 
-    group_by(trt) %>% 
+    group_by(sim_id, trt) %>% 
     summarize(
       
       # Count the number of trial participants & percentage
@@ -177,7 +177,8 @@ describe_trial <- function(dataset){
       n_preeclampsia_cen = sum(preeclampsia == 1 & censor == 0),
       preec_perc_cen = round(n_preeclampsia_no_cen / n() * 100, 1),
       n_sga_cen = sum(sga == 1 & censor == 0),
-      sga_perc_cen = round(n_sga_no_cen / n() * 100, 1)
+      sga_perc_cen = round(n_sga_no_cen / n() * 100, 1),
+      .groups = 'keep'
       
       )
   
@@ -196,7 +197,7 @@ describe_outcomes <- function(dataset){
   # Look at the distribution by being censored or not
   
   tib_censor_strat <- dataset %>% 
-    group_by(censor, trt, preg_outcome_final) %>% 
+    group_by(sim_id, censor, trt, preg_outcome_final) %>% 
     summarize(
       min = min(preg_outcome_final_gw),
       p25 = quantile(preg_outcome_final_gw, 0.25),
@@ -208,7 +209,7 @@ describe_outcomes <- function(dataset){
     )
   
   tib_no_strat <- dataset %>% 
-    group_by(trt, preg_outcome_final) %>% 
+    group_by(sim_id, trt, preg_outcome_final) %>% 
     summarize(
       min = min(preg_outcome_final_gw),
       p25 = quantile(preg_outcome_final_gw, 0.25),
@@ -225,7 +226,8 @@ describe_outcomes <- function(dataset){
                               censor == 0 ~ "Not censored",
                               censor == 1 ~ "Censored")
            ) %>% 
-    select(-censor)
+    select(-censor) %>% 
+    arrange(sim_id)
   
   return(tib) 
   
@@ -415,7 +417,7 @@ potential_outcomes_estimator <- function(dataset, rename){
 
 clean_analyze <- function(dset){
   
-  ## KM composite
+  ## KM estiamtor for composite outcome
   km_composite <- km_estimator(dset, outcome_var = "composite_km", outcome_var_t = "time", t_val = 41, rename = "km_composite_")
   
   ## AJ composite outcome
@@ -443,9 +445,6 @@ clean_analyze <- function(dset){
                     potential_outcomes)
   
 }
-
-
-
 
 
 ### Function that will calculate the bias that we're interested in.

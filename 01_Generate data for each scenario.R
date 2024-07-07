@@ -12,7 +12,7 @@ library(tidyverse)
 library(readxl)
 
 # Pull in the data generation functions.
-source("Data generation functions.R")
+source("00_data generation functions.R")
 
 # Specify the required values for the simulation
 # These are the same across scenarios.
@@ -20,6 +20,7 @@ n_sim <- 2
 settings <- list(
   n = 7500 # 1.5 million
 )
+
 
 
 
@@ -40,7 +41,7 @@ phase5 <- read_xlsx("Scenario 1.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -76,7 +77,7 @@ phase5 <- read_xlsx("Scenario 2.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -113,7 +114,7 @@ phase5 <- read_xlsx("Scenario 3.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -149,7 +150,7 @@ phase5 <- read_xlsx("Scenario 4.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -184,7 +185,7 @@ phase5 <- read_xlsx("Scenario 5.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -219,7 +220,7 @@ phase5 <- read_xlsx("Scenario 6.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -255,7 +256,7 @@ phase5 <- read_xlsx("Scenario 7.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -291,7 +292,7 @@ phase5 <- read_xlsx("Scenario 8.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -327,7 +328,7 @@ phase5 <- read_xlsx("Scenario 9.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -364,7 +365,7 @@ phase5 <- read_xlsx("Scenario 10.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -403,7 +404,7 @@ phase5 <- read_xlsx("Scenario 11.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
@@ -442,7 +443,7 @@ phase5 <- read_xlsx("Scenario 12.xlsx", sheet = "Phase5")
 # Specify the simulation settings
 for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 # Setting seed once at the beginning of the simulation
-set.seed(1234)
+set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
 
