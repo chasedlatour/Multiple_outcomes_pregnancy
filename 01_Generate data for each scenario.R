@@ -16,9 +16,9 @@ source("Data generation functions.R")
 
 # Specify the required values for the simulation
 # These are the same across scenarios.
-n_sim <- 1
+n_sim <- 2
 settings <- list(
-  n = 1200 # 1.5 million
+  n = 7500 # 1.5 million
 )
 
 
@@ -48,12 +48,14 @@ all_sims <- do.call(purrr::map, args = for_sim)
 
 saveRDS(all_sims, file = "scenario1.rds")
 
-## Remove datasets from the environment to ensure no issues
+## Remove datasets from the environment to ensure no memory issues
 
 data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+
+gc()
 
 
 
@@ -89,6 +91,8 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
 
 rm(list = data_delete)
 
+gc()
+
 
 
 
@@ -123,6 +127,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -158,6 +163,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -192,6 +198,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -226,6 +233,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -261,6 +269,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -296,6 +305,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -331,6 +341,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -367,6 +378,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -405,6 +417,7 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()
 
 
 
@@ -443,3 +456,4 @@ data_delete <- c("phase1","phase2","phase3","phase4","phase5",
                  "for_sim", "all_sims")
 
 rm(list = data_delete)
+gc()

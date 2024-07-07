@@ -20,10 +20,6 @@ each_sim <- function(n_sim, n){
   
   initial_seed <- list(.Random.seed)
   
-  # Set the seed for the simulation as equal to n_sim.
-  #set.seed(n_sim)
-  # Decided that this should only be done once at the beginning of the simulation, per Morris et al. 2019
-  
   # Generate 0 through 40 gestational weeks - 1 vector
   gw = list(seq(0,40, by = 1))
   
