@@ -2,11 +2,17 @@
 title: "Analyze Data from Monte Carlo Simulation"
 author: "Chase Latour"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
 ```
 
 # Pull in the Data
@@ -67,51 +73,123 @@ combined_analyses <- bind_rows(analyses_scenario1, analyses_scenario2)
 
 ```{r}
 
-combined_describe_trial %>% 
+n_outcomes <- combined_describe_trial %>% 
   group_by(scenario, trt) %>% 
+  summarize(n_pregnancies = median(n_people),
+            n_censored = median(n_censor),
+            n_fetal_deaths = median(n_fd_no_censor),
+            n_live_births = median(n_lb_no_censor),
+            .groups = 'drop')
+
+totals_by_scenario <- n_outcomes %>% 
+  group_by(scenario) %>% 
+  summarize(total_pregnancies = sum(n_pregnancies),
+            total_censored = sum(n_censored),
+            total_fetal_deaths = sum(n_fetal_deaths),
+            total_live_births = sum(n_live_births),
+            .groups = 'drop')
+
+descriptives <- left_join(n_outcomes, totals_by_scenario, by = ("scenario" = "scenario"))
+
+descriptives2 <- descriptives %>% 
+  rowwise() %>% 
+  mutate(perc_pregnancies = round(100*n_pregnancies / total_pregnancies, 2),
+         perc_censored = round(100*n_censored / total_censored, 2),
+         perc_fetal_deaths = round(100*n_fetal_deaths / total_fetal_deaths, 2),
+         perc_live_births = round(100*n_live_births / total_live_births, 2)) %>% 
+  ungroup() %>% 
+  mutate(pregnancies = paste0(n_pregnancies, " (", perc_pregnancies, "%)"),
+         censored = paste0(n_censored, " (", perc_censored, "%)"),
+         fetal_deaths = paste0(n_fetal_deaths, " (", perc_fetal_deaths, "%)"),
+         live_births = paste0(n_live_births, " (", perc_live_births, "%)")) %>% 
+  select(scenario, trt, pregnancies, censored, fetal_deaths, live_births) %>% 
+  pivot_wider(id_cols = scenario, 
+              names_from = trt,
+              values_from = c(pregnancies, censored, fetal_deaths, live_births))
   
-  
-  # Clean the dataset for printing
-# - Mutate the variables as desired
-# - Pivot the dataset wider
+descriptives2 %>% 
+  knitr::kable(digits = 3, format.args = list(big.mark = ",", scientific = FALSE),
+               col.names = c()) %>% # Trying to add commas to larger numbers
+  kable_classic() %>% 
+  add_header_above(c("Scenario" = 1, "Untreated" = 1, "Treated" = 1, 
+                     "Untreated" = 1, "Treated" = 1,
+                     "Untreated" = 1, "Treated" = 1, 
+                     "Untreated" = 1, "Treated" = 1)) %>% 
+  add_header_above(c(" " = 1, "Number of Pregnancies" = 2, 
+                     "Number of Censored Pregnancies" = 2,
+                     "Number of Fetal Deaths" = 2, 
+                     "Number of Live Births" = 2)) 
 
-# Calculate the Number of people after censoring with the percentages
+```
 
-censor <- combined_df %>% 
-  mutate(n_people_cen = n_people - n_censor) %>% 
-  select(Scenario, trt, n_people_cen) %>% 
-  group_by(Scenario) %>% 
-  summarize(percent_n_cen = round((n_people_cen / sum(n_people_cen))*100, 2),
-            n_people_cen = n_people_cen,
-            trt = trt,
-            .groups = "drop")
+# Results
 
-wider <- left_join(combined_df, censor, by = c("Scenario","trt")) %>% 
-  mutate(n_people = paste0(n_people, " (", percent_n_by_trt, "%)"),
-         n_people_cen = paste0(n_people_cen, " (", percent_n_cen, "%)"),
-         n_censor = paste0(n_censor, " (", percent_censor, "%)"),
-         n_fd_no_censor = paste0(n_fd_no_censor, " (", fd_percent_no_censor, "%)"),
-         n_lb_no_censor = paste0(n_lb_no_censor, " (", lb_percent_no_censor, "%)"),
-         n_fd_censor = paste0(n_fd_censor, " (", fd_percent_censor, "%)"),
-         n_lb_censor = paste0(n_lb_censor, " (", lb_percent_censor, "%)"),
-         n_preeclampsia_no_cen = paste0(n_preeclampsia_no_cen, " (", preec_perc_no_cen, "%)"),
-         n_sga_no_cen = paste0(n_sga_no_cen, " (", sga_perc_no_cen, "%)"),
-         n_preeclampsia_cen = paste0(n_preeclampsia_cen, " (", preec_perc_cen, "%)"),
-         n_sga_cen = paste0(n_sga_cen, " (", sga_perc_cen, "%)")
-         ) %>% 
-  pivot_wider(id_cols = Scenario, names_from = trt, 
-                     values_from = c(n_people, n_people_cen, n_censor, n_fd_no_censor, n_lb_no_censor,
-                                     n_fd_censor, n_lb_censor, n_preeclampsia_no_cen, 
-                                     n_sga_no_cen, n_preeclampsia_cen, n_sga_cen))
+CALCULATE THE NUMBER WITH UNDEFINED CIS
+
+
+```{r}
+
+# Establish the true estimates as the average of the potential outcomes
+
+composite_truth <- combined_analyses %>% 
+  group_by(scenario) %>% 
+  summarize(composite_truth_r0 = mean(`potential_ risk_composite_untrt`),
+            composite_truth_r1 = mean(`potential_ risk_composite_trt`),
+            composite_truth_rd = mean(`potential_ rd_composite`),
+            composite_truth_rr = mean(`potential_ rr_composite`))
+
+sga_truth <- combined_analyses %>% 
+  group_by(scenario) %>% 
+  summarize(sga_truth_r0 = mean(`potential_ risk_sga_untrt`),
+            sga_truth_r1 = mean(`potential_ risk_sga_trt`),
+            sga_truth_rd = mean(`potential_ rd_sga`),
+            sga_truth_rr = mean(`potential_ rr_sga`))
+
+combined_analyses2 <- left_join(combined_analyses, composite_truth, by = "scenario") %>% 
+  left_join(sga_truth, by = "scenario")
+# Get the estimates for the composite outcome
+
+composite_outcome <- combined_analyses %>% 
+  group_by(scenario) %>% 
+  summarize(km_r0 = mean(`km_composite_ r_0`),
+            km_r1 = mean(`km_composite_ r_1`),
+            km_rd = mean(`km_composite_ rd`),
+            km_rr = mean(`km_composite_ rr`),
+            aj_r0 = mean(`composite_multi_gw r_0`),
+            aj_r1 = mean(`composite_multi_gw r_1`),
+            aj_rd = mean(`composite_multi_gw rd`),
+            aj_rr = mean(`composite_multi_gw rr`)) %>% 
+  mutate(outcome = "Composite")
+
+
+# Get the estimates for SGA, only fd as a competing event
+
+sga_fetal_death <- combined_analyses %>% 
+  group_by(scenario) %>% 
+  summarize(km_r0 = mean(`km_sga_fd_ r_0`),
+           km_r1 = mean(`km_sga_fd_ r_1`),
+           km_rd = mean(`km_sga_fd_ rd`),
+           km_rr = mean(`km_sga_fd_ rr`),
+           aj_r0 = mean(`aj_sga_fd_ r_0`),
+           aj_r1 = mean(`aj_sga_fd_ r_1`),
+           aj_rd = mean(`aj_sga_fd_ rd`),
+           aj_rr = mean(`aj_sga_fd_ rr`)) %>% 
+  mutate(outcome = "SGA, only fetal death as competing event")
+
+
+sga_all_competing_events <- combined_analyses %>% 
+  group_by(scenario) %>% 
+  summarize(km_r0 = mean(`km_sga_fd_ r_0`),
+           km_r1 = mean(`km_sga_fd_ r_1`),
+           km_rd = mean(`km_sga_fd_ rd`),
+           km_rr = mean(`km_sga_fd_ rr`),
+           aj_r0 = mean(`aj_sga_all_ r_0`),
+           aj_r1 = mean(`aj_sga_all_ r_1`),
+           aj_rd = mean(`aj_sga_all_ rd`),
+           aj_rr = mean(`aj_sga_all_ rr`)) %>% 
+  mutate(outcome = "SGA, all competing events")
 
 
 
 ```
 
-# Descriptives of Trial Outcomes
-
-## Dataset Without Censoring
-
-## Dataset With Censoring
-
-# Results
