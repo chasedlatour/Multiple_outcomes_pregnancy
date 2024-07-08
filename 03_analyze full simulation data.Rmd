@@ -131,64 +131,155 @@ CALCULATE THE NUMBER WITH UNDEFINED CIS
 
 # Establish the true estimates as the average of the potential outcomes
 
-composite_truth <- combined_analyses %>% 
+truth <- combined_analyses %>% 
   group_by(scenario) %>% 
-  summarize(composite_truth_r0 = mean(`potential_ risk_composite_untrt`),
-            composite_truth_r1 = mean(`potential_ risk_composite_trt`),
-            composite_truth_rd = mean(`potential_ rd_composite`),
-            composite_truth_rr = mean(`potential_ rr_composite`))
-
-sga_truth <- combined_analyses %>% 
-  group_by(scenario) %>% 
-  summarize(sga_truth_r0 = mean(`potential_ risk_sga_untrt`),
-            sga_truth_r1 = mean(`potential_ risk_sga_trt`),
+  summarize(composite_truth_rd = mean(`potential_ rd_composite`),
+            composite_truth_rr = exp(mean(log(`potential_ rr_composite`))),
             sga_truth_rd = mean(`potential_ rd_sga`),
-            sga_truth_rr = mean(`potential_ rr_sga`))
+            sga_truth_rr = exp(mean(log(`potential_ rr_sga`))))
 
-combined_analyses2 <- left_join(combined_analyses, composite_truth, by = "scenario") %>% 
-  left_join(sga_truth, by = "scenario")
+# # Calculate averages for ESE, MSE,etc.
+# average <- combined_analyses %>% 
+#   group_by(scenario) %>% 
+#   summarize(km_composite_r0_average = mean(`km_composite_ r_0`),
+#             km_composite_r1_average = mean(`km_composite_ r_1`),
+#             km_composite_rd_average = mean(`km_composite_ rd`),
+#             km_composite_rr_average = exp(mean(log(`km_composite_ rr`))),
+#             aj_composite_r0_average = mean(`composite_multi_gw r_0`),
+#             aj_composite_r1_average = mean(`composite_multi_gw r_1`),
+#             aj_composite_rd_average = mean(`composite_multi_gw rd`),
+#             aj_composite_rr_average = exp(mean(log(`composite_multi_gw rr`))),
+#             km_sga_r0_average = mean(`km_sga_all_ r_0`),
+#             km_sga_r1_average = mean(`km_sga_all_ r_1`),
+#             km_sga_rd_average = mean(`km_sga_all_ rd`),
+#             km_sga_rr_average = exp(mean(log(`km_sga_all_ rr`))),
+#             aj_sga_all_r0_average = mean(`km_sga_all_ r_0`),
+#             aj_sga_all_r1_average = mean(`km_sga_all_ r_1`),
+#             aj_sga_all_rd_average = mean(`aj_sga_all_ rd`),
+#             aj_sga_all_rr_average = exp(mean(log(`aj_sga_all_ rr`))),
+#             aj_sga_fd_r0_average = mean(`aj_sga_fd_ r_0`),
+#             aj_sga_fd_r0_average = mean(`aj_sga_fd_ r_1`),
+#             aj_sga_fd_rd_average = mean(`aj_sga_fd_ rd`),
+#             aj_sga_fd_rr_average = mean(`aj_sga_fd_ rr`))
+
+  
+# Add the derived values to the dataset
+combined_analyses2 <- left_join(combined_analyses, truth, by = "scenario") #%>% 
+  # left_join(average, by = "scenario")
+
+
+calculate_simulation_values <- function(dataset){
+  
+  hold <- dataset %>% 
+    group_by(scenario) %>% 
+    summarize(km_r0 = mean(kmr0),
+              km_r0_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((kmr0 - km_r0)^2)),
+              km_r1 = mean(kmr1),
+              km_r1_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((kmr1 - km_r1)^2)),
+              km_rd = mean(kmrd),
+              km_rd_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((kmrd - km_rd)^2)),
+              km_rd_bias = mean(kmrd - rd_truth),
+              km_rd_ese = sqrt((1/(n()-1))*
+                                 sum((kmrd - km_rd)^2)),
+              # km_rd_ese_se = km_rd_ese / sqrt(2 * (n() - 1)),
+              km_rd_rmse = sqrt((1/n())*
+                                  sum((kmrd - rd_truth)^2)),
+              km_rr = mean(kmrr),
+              km_lnrr_se = sqrt((1 / (n()*(n()-1)))*
+                                  sum((log(kmrr) -
+                                         log(km_rr))^2)),
+              km_lnrr_bias = mean(log(kmrr) -
+                                  log(rr_truth)),
+              km_lnrr_ese = sqrt((1/(n()-1))*
+                                 sum((log(kmrr) - log(km_rr))^2)),
+              # km_lnrr_ese_se = km_rr_ese / sqrt(2 * (n() - 1)),
+              km_lnrr_rmse = sqrt((1/n())*
+                                  sum((log(kmrr) - log(rr_truth))^2)),
+              aj_r0 = mean(ajr0),
+              aj_r0_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((ajr0 -
+                                       aj_r0)^2)),
+              aj_r1 = mean(ajr1),
+              aj_r1_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((ajr1 -
+                                       aj_r1)^2)),
+              aj_rd = mean(ajrd),
+              aj_rd_se = sqrt((1 / (n()*(n()-1)))*
+                                sum((ajrd - 
+                                       aj_rd)^2)),
+              aj_rd_bias = mean(ajrd - rd_truth),
+              aj_rd_ese = sqrt((1/(n()-1))*
+                                 sum((ajrd - aj_rd)^2)),
+              aj_rd_rmse = sqrt((1/n())*
+                                  sum((ajrd - rd_truth)^2)),
+              aj_rr = exp(mean(log(ajrr))),
+              aj_lnrr_se = sqrt((1 / (n()*(n()-1)))*
+                                  sum((log(ajrr) - 
+                                         log(aj_rr))^2)),
+              aj_lnrr_bias = mean(log(ajrr) -
+                                  log(rr_truth)),
+              aj_lnrr_ese = sqrt((1/(n()-1))*
+                                 sum((log(ajrr) - log(aj_rr))^2)),
+              aj_lnrr_rmse = sqrt((1/n())*
+                                  sum((log(ajrr) - log(rr_truth))^2))
+              )
+  
+  return(hold)
+  
+}
+  
+
 # Get the estimates for the composite outcome
 
-composite_outcome <- combined_analyses %>% 
-  group_by(scenario) %>% 
-  summarize(km_r0 = mean(`km_composite_ r_0`),
-            km_r1 = mean(`km_composite_ r_1`),
-            km_rd = mean(`km_composite_ rd`),
-            km_rr = mean(`km_composite_ rr`),
-            aj_r0 = mean(`composite_multi_gw r_0`),
-            aj_r1 = mean(`composite_multi_gw r_1`),
-            aj_rd = mean(`composite_multi_gw rd`),
-            aj_rr = mean(`composite_multi_gw rr`)) %>% 
-  mutate(outcome = "Composite")
+composite_outcome <- combined_analyses2 %>% 
+  rename(kmr0 = `km_composite_ r_0`,
+         kmr1 = `km_composite_ r_1`,
+         kmrd = `km_composite_ rd`,
+         kmrr = `km_composite_ rr`,
+         ajr0 = `composite_multi_gw r_0`,
+         ajr1 = `composite_multi_gw r_1`,
+         ajrd = `composite_multi_gw rd`,
+         ajrr = `composite_multi_gw rr`,
+         rd_truth = composite_truth_rd,
+         rr_truth = composite_truth_rr) %>% 
+  calculate_simulation_values() %>% 
+  mutate(Outcome = "Composite")
+  
+# SGA - FD only
+sga_fd_only <- combined_analyses2 %>% 
+  rename(kmr0 = `km_sga_fd_ r_0`,
+         kmr1 = `km_sga_fd_ r_1`,
+         kmrd = `km_sga_fd_ rd`,
+         kmrr = `km_sga_fd_ rr`,
+         ajr0 = `aj_sga_fd_ r_0`,
+         ajr1 = `aj_sga_fd_ r_1`,
+         ajrd = `aj_sga_fd_ rd`,
+         ajrr = `aj_sga_fd_ rr`,
+         rd_truth = sga_truth_rd,
+         rr_truth = sga_truth_rr) %>% 
+  calculate_simulation_values() %>% 
+  mutate(Outcome  = "SGA - Fetal death only competing event")
 
+# SGA - All competing events
+sga_all <- combined_analyses2 %>% 
+  rename(kmr0 = `km_sga_all_ r_0`,
+         kmr1 = `km_sga_all_ r_1`,
+         kmrd = `km_sga_all_ rd`,
+         kmrr = `km_sga_all_ rr`,
+         ajr0 = `aj_sga_all_ r_0`,
+         ajr1 = `aj_sga_all_ r_1`,
+         ajrd = `aj_sga_all_ rd`,
+         ajrr = `aj_sga_all_ rr`,
+         rd_truth = sga_truth_rd,
+         rr_truth = sga_truth_rr) %>% 
+  calculate_simulation_values() %>% 
+  mutate(Outcome  = "SGA - All competing events")
+  
 
-# Get the estimates for SGA, only fd as a competing event
-
-sga_fetal_death <- combined_analyses %>% 
-  group_by(scenario) %>% 
-  summarize(km_r0 = mean(`km_sga_fd_ r_0`),
-           km_r1 = mean(`km_sga_fd_ r_1`),
-           km_rd = mean(`km_sga_fd_ rd`),
-           km_rr = mean(`km_sga_fd_ rr`),
-           aj_r0 = mean(`aj_sga_fd_ r_0`),
-           aj_r1 = mean(`aj_sga_fd_ r_1`),
-           aj_rd = mean(`aj_sga_fd_ rd`),
-           aj_rr = mean(`aj_sga_fd_ rr`)) %>% 
-  mutate(outcome = "SGA, only fetal death as competing event")
-
-
-sga_all_competing_events <- combined_analyses %>% 
-  group_by(scenario) %>% 
-  summarize(km_r0 = mean(`km_sga_fd_ r_0`),
-           km_r1 = mean(`km_sga_fd_ r_1`),
-           km_rd = mean(`km_sga_fd_ rd`),
-           km_rr = mean(`km_sga_fd_ rr`),
-           aj_r0 = mean(`aj_sga_all_ r_0`),
-           aj_r1 = mean(`aj_sga_all_ r_1`),
-           aj_rd = mean(`aj_sga_all_ rd`),
-           aj_rr = mean(`aj_sga_all_ rr`)) %>% 
-  mutate(outcome = "SGA, all competing events")
-
+## Then stack
 
 
 ```
