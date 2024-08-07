@@ -901,6 +901,13 @@
       ],
       "Hash": "7ce2733a9826b3aeb1775d56fd305472"
     },
+    "mcstatsim": {
+      "Package": "mcstatsim",
+      "Version": "0.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0631dd449b9a49657ddd831d984c67da"
+    },
     "memoise": {
       "Package": "memoise",
       "Version": "2.0.1",

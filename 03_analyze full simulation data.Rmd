@@ -21,7 +21,7 @@ library(mcstatsim)
 ```{r}
 
 # CHANGE THE 6 TO 12 WHEN DONE
-nscenario <- 6
+nscenario <- 3
 
 # Descriptive data from each of the scenarios
 
@@ -43,8 +43,8 @@ for (x in 1:nscenario) {
   
 }
 
-combined_describe_trial <- bind_rows(describe_scenario1, describe_scenario2, describe_scenario3,
-                                     describe_scenario4, describe_scenario5, describe_scenario6)
+combined_describe_trial <- bind_rows(describe_scenario1, describe_scenario2, describe_scenario3)#,
+                                     # describe_scenario4, describe_scenario5, describe_scenario6)
 
 
 
@@ -67,8 +67,8 @@ for (x in 1:nscenario) {
   assign(var_name, dataset)
 }
 
-combined_analyses <- bind_rows(analyses_scenario1, analyses_scenario2, analyses_scenario3,
-                               analyses_scenario4, analyses_scenario5, analyses_scenario6)
+combined_analyses <- bind_rows(analyses_scenario1, analyses_scenario2, analyses_scenario3)#,
+                               # analyses_scenario4, analyses_scenario5, analyses_scenario6
 
 ```
 
@@ -162,8 +162,12 @@ CALCULATE THE NUMBER WITH UNDEFINED CIS
 
 truth <- combined_analyses %>% 
   group_by(scenario) %>% 
-  summarize(composite_truth_rd = mean(`potential_ rd_composite`),
+  summarize(composite_truth_r1 = mean(`potential_ risk_composite_trt`),
+            composite_truth_r0 = mean(`potential_ risk_composite_untrt`),
+            composite_truth_rd = mean(`potential_ rd_composite`),
             composite_truth_rr = exp(mean(log(`potential_ rr_composite`))),
+            sga_truth_r1 = mean(`potential_ risk_sga_trt`),
+            sga_truth_r0 = mean(`potential_ risk_sga_untrt`),
             sga_truth_rd = mean(`potential_ rd_sga`),
             sga_truth_rr = exp(mean(log(`potential_ rr_sga`))))
 
@@ -174,7 +178,11 @@ calculate_simulation_values <- function(dataset, truth_dataset){
   
   hold <- dataset %>% 
     group_by(scenario) %>% 
-    summarize(km_r0 = mean(kmr0),
+    summarize(truth_r0 = mean(r0_truth),
+              truth_r1 = mean(r1_truth),
+              truth_rd = mean(rd_truth),
+              truth_rr = mean(rr_truth),
+              km_r0 = mean(kmr0),
               # km_r0_se = sqrt((1 / (n()*(n()-1)))*
               #                   sum((kmr0 - km_r0)^2)),
               km_r1 = mean(kmr1),
@@ -237,6 +245,8 @@ composite_outcome <- combined_analyses2 %>%
          ajr1 = `composite_multi_gw r_1`,
          ajrd = `composite_multi_gw rd`,
          ajrr = `composite_multi_gw rr`,
+         r1_truth = composite_truth_r1,
+         r0_truth = composite_truth_r0,
          rd_truth = composite_truth_rd,
          rr_truth = composite_truth_rr) %>% 
   calculate_simulation_values() %>% 
@@ -252,6 +262,8 @@ sga_fd_only <- combined_analyses2 %>%
          ajr1 = `aj_sga_fd_ r_1`,
          ajrd = `aj_sga_fd_ rd`,
          ajrr = `aj_sga_fd_ rr`,
+         r1_truth = sga_truth_r1,
+         r0_truth = sga_truth_r0,
          rd_truth = sga_truth_rd,
          rr_truth = sga_truth_rr) %>% 
   calculate_simulation_values() %>% 
@@ -267,6 +279,8 @@ sga_all <- combined_analyses2 %>%
          ajr1 = `aj_sga_all_ r_1`,
          ajrd = `aj_sga_all_ rd`,
          ajrr = `aj_sga_all_ rr`,
+         r1_truth = sga_truth_r1,
+         r0_truth = sga_truth_r0,
          rd_truth = sga_truth_rd,
          rr_truth = sga_truth_rr) %>% 
   calculate_simulation_values() %>% 
@@ -282,9 +296,10 @@ rbind(composite_outcome, sga_fd_only, sga_all) %>%
   pack_rows("Composite Outcome", 1, nscenario) %>% 
   pack_rows("SGA with Fetal Death as Only Competing Events", nscenario+1, 2*nscenario) %>% 
   pack_rows("SGA with 2 Competing Events", 2*nscenario+1, 3*nscenario) %>% 
-  add_header_above(c(" " = 1, "Risk Estimates" = 2, "Risk Difference" = 4, "Risk Ratio" = 4,
+  add_header_above(c(" " = 1, "Risk Estimates" = 2, "Risk Difference" = 1,
+                     "Risk Ratio" = 1, "Risk Estimates" = 2, "Risk Difference" = 4, "Risk Ratio" = 4,
                      "Risk Estimates" = 2, "Risk Difference" = 4, "Risk Ratio" = 4)) %>% 
-  add_header_above(c(" " =  1, "Kaplan-Meier Estimator" = 10,
+  add_header_above(c(" " =  1, "Truth" = 4, "Kaplan-Meier Estimator" = 10,
                    "Aalen-Johansen Estimator" = 10))
   
 
@@ -297,6 +312,7 @@ rbind(composite_outcome, sga_fd_only, sga_all) %>%
 z <- qnorm(0.975)
 
 figure_data <- rbind(composite_outcome, sga_fd_only, sga_all) %>% 
+  select(-starts_with("truth_")) %>% 
   mutate(km_rd_lcl = km_rd - z*km_rd_se,
          km_rd_ucl = km_rd + z*km_rd_se,
          km_rr_lcl = exp(log(km_rr) - z*km_lnrr_se),
