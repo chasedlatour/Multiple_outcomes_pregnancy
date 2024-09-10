@@ -702,68 +702,73 @@ ggplot(figure_safety2) +
 
 dev.off()
 
+```
+
+# Calculate Stats for Manuscript
+
+## Primary Efficacy Outcome
+
+```{r}
 
 
+## Efficacy Outcome
+composite_outcome %>% 
+  select(-c(contains("_se"))) %>% 
+  filter(scenario <= 6) %>% 
+  mutate(
+    km_r0_bias = km_r0 - truth_r0,
+    km_r1_bias = km_r1 - truth_r1
+  ) %>% 
+  ungroup() %>% 
+  summarize(
+    avg_km0_bias = mean(km_r0_bias),
+    avg_km1_bias = mean(km_r1_bias),
+    avg_km_rd_bias = mean(abs(km_rd_bias)),
+    avg_km_rr_bias = mean(abs(km_lnrr_bias))
+  )
 
 
-
-
-
-
-
-
-# #bitmap("Primary efficacy outcome.tiff", width = 5, height = 10, units = 'in', type = 'tifflzw', res=600)
-# 
-# pdf("Primary safety outcome.pdf", height = 4, width = 7)
-# 
-# # Create the plot
-# ggplot(figure_safety) +
-#   # Incidence bars for Drug A and Comparator
-#   geom_bar(aes(y = Estimator, x = risk_initiators, fill = "Initiators"), stat = "identity", 
-#            position = position_nudge(y = 0.2, x = -0.1), width = 0.4, alpha = 0.7) +
-#   geom_bar(aes(y = Estimator, x = risk_non_initiators, fill = "Non-Initiators"), stat = "identity", 
-#            position = position_nudge(y = -0.2, x = -0.1), width = 0.4, alpha = 0.4) +
-#   # Points and error bars for Risk Difference
-#   geom_point(aes(y = Estimator, x = RD), 
-#              #position = position_dodge(width = 0.8),
-#              position = position_nudge(x = 0.6)
-#              ) +
-#   geom_label(aes(y = Estimator, x = 0.84, label = scales::number(rd_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
-#   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd + 0.6), linetype = "dashed", color = "red") +
-#   #   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_r0 - 0.1), 
-#   #            linetype = "dashed", color = "#00BFC4") +
-#   # geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_r1 - 0.1), 
-#   #            linetype = "dashed", color = "#F8766D") +
-#   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
-#   # Customizing the axes
-#   scale_x_continuous(
-#     name = "              Risk (%)",
-#     limits = c(-0.1, 0.9),
-#     breaks = seq(-0.1, 0.8, by = 0.1),
-#     labels  = c("0.0","0.1", "0.2", "0.3", "0.4", "0.5", " ", " ", "", ""),
-#     sec.axis = sec_axis(~ ., name = "Risk Difference    Absolute Bias",
-#                         breaks = seq(0.5, 0.7, by = 0.1),
-#                         labels = c("0.1", "0.0", "0.1"))
-#   )  +
-#   #geom_vline(xintercept = 0.15, col = "black") +
-#   geom_vline(xintercept = 0.45, col = "black") +
-#   geom_vline(xintercept = 0.6, col = "black", linetype = 'dotted') +
-#   labs(y = NULL, 
-#        x = NULL,
-#        fill = "Treatment Group", 
-#        ) +
-#   theme_minimal() +
-#   theme(legend.position = "bottom",
-#         axis.title.x.top = element_text(hjust = 0.99),
-#         axis.text.y = element_text(size = 12),
-#         strip.text = element_text(size = 12),
-#         legend.text = element_text(size =12),
-#         axis.title.x.bottom = element_text(hjust = 0.09)) +
-#   theme(strip.placement = "outside") 
-# 
-# dev.off()
+  
 
 
 
 ```
 
+## Primary Safety Outcome - Only Fetal Death as Competing Event
+
+```{r}
+
+sga_fd_only %>% 
+  select(-c(contains("_se"))) %>% 
+  mutate(
+    km_r0_bias = km_r0 - truth_r0,
+    km_r1_bias = km_r1 - truth_r1,
+    aj_r0_bias = aj_r0 - truth_r0,
+    aj_r1_bias = aj_r1 - truth_r1
+  ) %>% 
+  ungroup() %>% 
+  summarize(
+    avg_km0_bias = mean(km_r0_bias),
+    avg_km1_bias = mean(km_r1_bias),
+    avg_km_rd_bias = mean(abs(km_rd_bias)),
+    avg_km_rr_bias = mean(abs(km_lnrr_bias)),
+    avg_aj0_bias = mean(aj_r0_bias),
+    avg_aj1_bias = mean(aj_r1_bias),
+    avg_aj_rd_bias = mean(abs(aj_rd_bias)),
+    avg_aj_rr_bias = mean(abs(aj_lnrr_bias))
+  ) %>% 
+  mutate(
+    avg_km_bias = (avg_km0_bias + avg_km1_bias) / 2,
+    avg_aj_bias = (avg_aj0_bias + avg_aj1_bias) / 2
+  )
+
+```
+
+## Primary Safety Outcome - All Competing Events
+
+```{r}
+
+safety_all <- sga_all %>% 
+  select(-c(contains("_se")))
+
+```
