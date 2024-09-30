@@ -180,60 +180,60 @@ truth <- combined_analyses %>%
 combined_analyses2 <- left_join(combined_analyses, truth, by = "scenario")
 
 
-calculate_simulation_values <- function(dataset, truth_dataset){
+calculate_simulation_values <- function(dataset){
   
   hold <- dataset %>% 
     group_by(scenario) %>% 
-    summarize(truth_r0 = mean(r0_truth),
-              truth_r1 = mean(r1_truth),
-              truth_rd = mean(rd_truth),
-              truth_rr = mean(rr_truth),
-              km_r0 = mean(kmr0),
-              # km_r0_se = sqrt((1 / (n()*(n()-1)))*
-              #                   sum((kmr0 - km_r0)^2)),
-              km_r1 = mean(kmr1),
-              # km_r1_se = sqrt((1 / (n()*(n()-1)))*
-              #                   sum((kmr1 - km_r1)^2)),
-              km_rd = mean(kmrd),
-              km_rd_se = sqrt((1 / (n()*(n()-1)))*
-                                sum((kmrd - km_rd)^2)),
-              km_rd_bias = mean(kmrd - rd_truth),
-              km_rd_ese = sqrt((1/(n()-1))*
-                                 sum((kmrd - km_rd)^2)),
-              km_rd_rmse = sqrt((1/n())*
-                                  sum((kmrd - rd_truth)^2)),
-              km_rr = mean(kmrr),
-              km_lnrr_se = sqrt((1 / (n()*(n()-1)))*
-                                  sum((log(kmrr) -
-                                         log(km_rr))^2)),
-              km_lnrr_bias = mean(log(kmrr) -
-                                  log(rr_truth)),
-              km_lnrr_ese = sqrt((1/(n()-1))*
-                                 sum((log(kmrr) - log(km_rr))^2)),
-              km_lnrr_rmse = sqrt((1/n())*
-                                  sum((log(kmrr) - log(rr_truth))^2)),
-              aj_r0 = mean(ajr0),
-              aj_r1 = mean(ajr1),
-              aj_rd = mean(ajrd),
-              aj_rd_se = sqrt((1 / (n()*(n()-1)))*
-                                sum((ajrd -
-                                       aj_rd)^2)),
-              aj_rd_bias = mean(ajrd - rd_truth),
-              aj_rd_ese = sqrt((1/(n()-1))*
-                                 sum((ajrd - aj_rd)^2)),
-              aj_rd_rmse = sqrt((1/n())*
-                                  sum((ajrd - rd_truth)^2)),
-              aj_rr = exp(mean(log(ajrr))),
-              aj_lnrr_se = sqrt((1 / (n()*(n()-1)))*
-                                  sum((log(ajrr) -
-                                         log(aj_rr))^2)),
-              aj_lnrr_bias = mean(log(ajrr) -
-                                  log(rr_truth)),
-              aj_lnrr_ese = sqrt((1/(n()-1))*
-                                 sum((log(ajrr) - log(aj_rr))^2)),
-              aj_lnrr_rmse = sqrt((1/n())*
-                                  sum((log(ajrr) - log(rr_truth))^2))
-              )
+    summarize(
+      
+      # True Values
+      truth_r0 = mean(r0_truth),
+      truth_r1 = mean(r1_truth),
+      truth_rd = mean(rd_truth),
+      truth_rr = exp(mean(log(rr_truth))),
+      
+      # Kaplan-Meier Estimator
+      ## Absolute risk
+      km_r0 = mean(kmr0),
+      km_r1 = mean(kmr1),
+      ## Risk Difference
+      km_rd = mean(kmrd), # Estimate
+      km_rd_se = sqrt((1 / (n()*(n()-1)))*
+                        sum((kmrd - km_rd)^2)),
+      km_rd_bias = mean(kmrd) - truth_rd,
+      km_rd_ese = sqrt(var(kmrd)),
+      km_rd_rmse = sqrt(mean((kmrd - truth_rd)^2)),
+      ## Risk Ratio
+      km_rr = exp(mean(log(kmrr))),
+      km_lnrr_se = sqrt((1 / (n()*(n()-1)))*
+                          sum((log(kmrr) - log(km_rr))^2)),
+      km_lnrr_bias = mean(log(kmrr)) - log(truth_rr),
+      km_lnrr_ese = sqrt(var(log(kmrr))),
+      km_lnrr_rmse = sqrt(mean((log(kmrr) - log(truth_rr))^2)),
+      
+      
+      # Aalen-Johansen Estimator
+      ## Absolute risk
+      aj_r0 = mean(ajr0),
+      aj_r1 = mean(ajr1),
+      ## Risk Difference
+      aj_rd = mean(ajrd),
+      aj_rd_se = sqrt((1 / (n()*(n()-1)))*
+                        sum((ajrd - aj_rd)^2)),
+      aj_rd_bias = mean(ajrd) - truth_rd,
+      aj_rd_ese = sqrt(var(ajrd)),
+      aj_rd_rmse = sqrt(mean((ajrd - truth_rd)^2)),
+      ## Risk Ratio
+      aj_rr = exp(mean(log(ajrr))),
+      aj_lnrr_se = sqrt((1 / (n()*(n()-1)))*
+                          sum((log(ajrr) - log(aj_rr))^2)),
+      aj_lnrr_bias = mean(log(ajrr)) - log(truth_rr),
+      aj_lnrr_ese = sqrt(var(log(ajrr))),
+      aj_lnrr_rmse = sqrt(mean((log(ajrr) - log(truth_rr))^2)),
+      
+      .groups = "keep"
+      
+    )
   
   return(hold)
   
@@ -293,10 +293,11 @@ sga_all <- combined_analyses2 %>%
   mutate(Outcome  = "SGA: 2 Competing Events")
 
 # # Print in Excel file
-# analysis <- rbind(composite_outcome, sga_fd_only, sga_all) %>% 
-#   select(-c(Outcome, contains("_se"))) %>% 
+# analysis <- rbind(composite_outcome, sga_fd_only, sga_all) %>%
+#   select(-c(Outcome, contains("_se"))) %>%
 #   mutate(across(where(is.numeric), ~ round(.x, 2)))
-# write.xlsx(analysis, file = "analysis results.xlsx")  
+# library(openxlsx)
+# write.xlsx(analysis, file = "analysis results.xlsx")
 
 ## Then stack and print
 rbind(composite_outcome, sga_fd_only, sga_all) %>% 
@@ -576,7 +577,7 @@ aj_safety <- figure_data %>%
 figure_safety <- bind_rows(km_safety, aj_safety) %>% 
   left_join(truth, by = "scenario") %>% 
   mutate(rd_absolute_bias = round(abs(sga_truth_rd - RD),4),
-         rr_absolute_bias = round(abs(log(composite_truth_rr) - log(RR)), 4)) %>% 
+         rr_absolute_bias = round(abs(log(sga_truth_rr) - log(RR)), 4)) %>% 
   mutate(Estimator = factor(Estimator,
                             levels = c("AJ: 2 Competing Events",
                                        "AJ: 1 Competing Event",
