@@ -134,7 +134,7 @@ descriptives2 %>%
 
 # Results
 
-```{r}
+```{r eval=FALSE}
 
 # Create functions to calculate evaluation parameters
 
@@ -387,34 +387,6 @@ unique_rr_values <- figure_efficacy2 %>%
 
 pdf("Primary efficacy outcome - risks.pdf", height = 6, width = 4.25)
 
-# ggplot(figure_efficacy2) +
-#   # Incidence bars for Drug A and Comparator
-#   geom_bar(aes(y = Estimator, x = risk_initiators, fill = "Initiators"), stat = "identity", 
-#            position = position_nudge(y = 0.2), width = 0.4, alpha = 0.7) +
-#   geom_bar(aes(y = Estimator, x = risk_non_initiators, fill = "Non-Initiators"), stat = "identity", 
-#            position = position_nudge(y = -0.2), width = 0.4, alpha = 0.7) +
-#   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
-#     geom_vline(data = unique_rd_values, aes(xintercept = composite_truth_r0), # + 0.35
-#              linetype = "solid", color = "grey") +
-#   geom_vline(data = unique_rd_values, aes(xintercept = composite_truth_r1), #  + 0.35
-#              linetype = "dashed", color = "black") +
-#   labs(y = "Scenario", 
-#        x = "Absolute Risk",
-#        fill = "Treatment Group", 
-#        ) +
-#   theme_minimal() +
-#   theme(legend.position = "bottom",
-#         # axis.title.x.top = element_text(hjust = 0.97),
-#         axis.text.y = element_text(size = 12),
-#         strip.text = element_text(size = 12),
-#         legend.text = element_text(size =10)
-#         ) +
-#   scale_fill_manual(values = c("Initiators" = "black", "Non-Initiators" = "grey")) +
-#   theme(strip.placement = "outside") 
-
-
-
-
 # BAR with truth as point estimates
 ggplot(figure_efficacy2) +
   # Incidence bars for Drug A and Comparator
@@ -424,9 +396,9 @@ ggplot(figure_efficacy2) +
            position = position_nudge(y = -0.2), width = 0.4, alpha = 0.7) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   geom_point(data = figure_efficacy2, aes(y = Estimator, x = composite_truth_r1),
-             position = position_nudge(y = 0.2), size = 3, shape = "diamond") +
+             position = position_nudge(y = 0.2), size = 3, shape = 23, fill = "white", color = "black") +
   geom_point(data = figure_efficacy2, aes(y = Estimator, x = composite_truth_r0),
-             position = position_nudge(y = -0.2), size = 3, shape = "diamond") +
+             position = position_nudge(y = -0.2), size = 3, shape = 23, fill = "white", color = "black") +
   labs(y = "Scenario", 
        x = "Absolute Risk",
        fill = "Treatment Group", 
@@ -644,9 +616,9 @@ ggplot(figure_safety) +
            position = position_nudge(y = -0.2), width = 0.4, alpha = 0.4) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   geom_point(data = figure_safety, aes(y = Estimator, x = sga_truth_r1),
-             position = position_nudge(y = 0.2), size = 2, shape = "diamond") +
+             position = position_nudge(y = 0.2), size = 2, shape = 23, fill = "white", color = "black") +
   geom_point(data = figure_safety, aes(y = Estimator, x = sga_truth_r0),
-             position = position_nudge(y = -0.2), size = 2, shape = "diamond") +
+             position = position_nudge(y = -0.2), size = 2, shape = 23, fill = "white", color = "black") +
   #   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_r0), # + 0.35
   #            linetype = "dashed", color = "grey") +
   # geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_r1), #  + 0.35
