@@ -49,7 +49,26 @@ combined_describe_trial <- bind_rows(describe_scenario1, describe_scenario2, des
                                      describe_scenario7, describe_scenario8, describe_scenario9,
                                      describe_scenario10, describe_scenario11, describe_scenario12)
 
+# Descriptive outcome data from each of the scenarios
 
+for (x in 1:nscenario) {
+  
+  file_name <- paste0("describe outcomes_scenario", x, ".rds")
+  
+  dataset <- readRDS(file_name)
+  
+  dataset$scenario <- x
+  
+  var_name <- paste0("describe_scenario", x)
+  
+  assign(var_name, dataset)
+  
+}
+
+combined_describe_outcomes <- bind_rows(describe_scenario1, describe_scenario2, describe_scenario3,
+                                     describe_scenario4, describe_scenario5, describe_scenario6,
+                                     describe_scenario7, describe_scenario8, describe_scenario9,
+                                     describe_scenario10, describe_scenario11, describe_scenario12)
 
 # Analysis data for each of the scenarios
 
@@ -142,6 +161,16 @@ descriptives2 %>%
                      "Number of Preeclampsia" = 2,
                      "Number of SGA" = 2)) 
 
+```
+
+# Timing Descriptives of Trial Population
+
+```{r}
+
+combined_describe_outcomes %>%
+  filter(strata == "Total") %>%
+  group_by(scenario, trt, preg_outcome_final) %>%
+  summarize(min_median = min(median), median_median = median(median), max_median = max(median), .groups = "drop") 
 ```
 
 # Results
@@ -331,6 +360,60 @@ rbind(composite_outcome, sga_fd_only, sga_all) %>%
 ```
 
 # Figure: Composite Outcome
+
+## Monte Carlo Standard Error
+
+```{r}
+
+nsim <- 2000
+
+calc_mcse <- function(dsn, r0, r1, rd, rr, nsim=2000){
+  
+  mcse <- dsn %>% 
+    group_by(scenario) %>% 
+    summarize(
+      r0 = sqrt( (1/(nsim * (nsim-1))) * sum(({{r0}} - mean({{r0}}))^2)),
+      r1 = sqrt( (1/(nsim * (nsim-1))) * sum(({{r1}} - mean({{r1}}))^2)),
+      rd = sqrt( (1/(nsim * (nsim-1))) * sum(({{rd}} - mean({{rd}}))^2)),
+      rr = sqrt( (1/(nsim * (nsim-1))) * sum((log({{r0}}) - mean(log({{r0}})))^2)),
+      .groups = 'drop'
+    ) %>% 
+    mutate(
+      min_mcse = pmin(r0, r1, rd, rr),
+      max_mcse = pmax(r0, r1, rd, rr),
+      min_mcse_overall = min(r0, r1, rd, rr),
+      max_mcse_overall = max(r0, r1, rd, rr)
+    )
+  
+  return(mcse)
+  
+}
+
+### Composite outcome
+
+# KM
+calc_mcse(dsn=combined_analyses, r0=`km_composite_ r_0`, r1=`km_composite_ r_1`,
+                          rd = `km_composite_ rr`, rr=`km_composite_ rr`)
+# AJ
+calc_mcse(dsn=combined_analyses, r0=`composite_multi_gw r_0`,r1=`composite_multi_gw r_1`,
+                         rd=`composite_multi_gw rd`, rr=`composite_multi_gw rr`)
+
+### SGA outcome
+# KM
+calc_mcse(dsn=combined_analyses, r0=`km_sga_all_ r_0`,r1=`km_sga_all_ r_1`,
+                    rd=`km_sga_all_ rd`, rr=`km_sga_all_ rr`)
+# AJ, censoring non-SGA live birth
+calc_mcse(dsn=combined_analyses, r0=`aj_sga_fd_ r_0`, r1=`aj_sga_fd_ r_1`,
+                       rd=`aj_sga_fd_ rd`, rr=`aj_sga_fd_ rr`)
+# AJ, only administrative censoring
+calc_mcse(dsn=combined_analyses, r0=`aj_sga_all_ r_0`, r1=`aj_sga_all_ r_1`,
+                    rd=`aj_sga_all_ rd`, rr=`aj_sga_all_ rr`)
+
+  
+
+```
+
+## Figure
 
 ```{r}
 
