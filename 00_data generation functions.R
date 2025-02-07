@@ -11,7 +11,6 @@
 #####################################################
 
 
-
 # This is the baseline function that will be 
 # -- used to generate each cohort.
 # This function will be run to generate a cohort 
@@ -34,7 +33,7 @@ each_sim <- function(n_sim, n, gw_index=4){
   data[, phase1_outcomes := lapply(1:.N, function(i) sample_outcomes_for_id(phase1))]
   
   # Compute last GA before 18 weeks in batch
-  data[, last_GA_pre18 := sapply(phase1_outcomes, pre18)] # NOT WORKING# Compute last GA before 18 weeks in batch
+  data[, last_GA_pre18 := sapply(phase1_outcomes, pre18)] 
 
   # Compute trial participation indicator
   data[, trial_participant := (first_index <= last_GA_pre18)]
@@ -160,41 +159,10 @@ sample_outcomes_for_id <- function(data) {
 #Testing: outcomes <- test$phase1_outcomes[[1]]
 
 
-# This function will create a vector of index events based upon the probabilities
-# -- recorded in phase1.
-sample_index_for_id <- function(data) {
-  #id_data <- subset(your_data, id == id)  # Filter data for the specific id
-  
-  # Apply this function to each row of phase1-phase4 data where needed.
-  # -- Create vector of 1:nrow(data) and then apply the function below
-  indices <- sapply(1:nrow(data), function(i) { 
-    
-    # Determine the probability of an index at that gestational week
-    prob = phase1$p_index[i]
-    
-    # Sample the index value based upon that probability
-    
-    # Indicate the potential options to select from
-    options <- c("contpreg_next")
-    
-    # Assign the probabilities to each of the potential pregnancy outcome options based upon 
-    # -- the corresponding rows in the phase1-4 files.
-    probabilities <- data[i, c("p_fetaldeath_next", "p_livebirth_next", "p_contpreg_next")]
-    
-    # Sample an option based on probabilities
-    sampled_option <- sample(options, size = 1, prob = probabilities)
-    
-    # Return that sampled option. This will be stored in the vector outcomes
-    return(sampled_option)
-  })
-  
-  #list(outcomes = outcomes)
-  return(list(outcomes))
-}
 
 
-
-
+# This function outputs the week of the first fetal death event that occurs after the index date
+# but prior to 18 weeks of gestation (i.e., 20 weeks post-LMP)
 pre18 <- function(outcomes) {
   # Extract outcomes for gestational weeks 0 through 18 (indices 1:19)
   outcomes_sub <- outcomes[1:19]  

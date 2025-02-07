@@ -21,11 +21,7 @@ trial_cohort <- function(dataset){
   
   trial1 <- dataset %>% 
     bind_rows() %>%
-    subset(trial_participant == TRUE) %>% 
-    # Remove the old treatment variable from data generation
-    # This was selected over the entire conception population as opposed to 
-    # only applied in the trial cohort - Creates a lot of imbalance.
-    select(-trt)
+    subset(trial_participant == TRUE)
   
   n <- nrow(trial1)
   
