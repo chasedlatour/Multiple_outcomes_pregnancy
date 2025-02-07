@@ -23,83 +23,91 @@ each_sim <- function(n_sim, n, gw_index=4){
   # Generate 0 through 40 gestational weeks - 1 vector
   gw = list(seq(0,40, by = 1))
   
-  # Create data.table
-  data <- data.table(
-    sim_id = n_sim, #Simulation ID
-    id = 1:n, #Each individual's ID
-    first_index=gw_index #Index date
-  )
-  
-  # Generate phase 1 outcomes
-  data[, phase1_outcomes := lapply(1:.N, function(i) sample_outcomes_for_id(phase1))]
-  
-  # Compute last GA before 18 weeks in batch
-  data[, last_GA_pre18 := sapply(phase1_outcomes, pre18)] # NOT WORKING# Compute last GA before 18 weeks in batch
-
-  # Compute trial participation indicator
-  data[, trial_participant := (first_index <= last_GA_pre18)]
-  
-  # Precompute phase 2 (i.e., treated) outcomes ONCE for all rows
-  data[, phase2_outcomes_pre := lapply(1:.N, function(i) sample_outcomes_for_id(phase2))]
-  
-  # Replace the outcomes prior to the index dates with those from the phase 1 (i.e., untreated) outcomes
-  data[, phase2_outcomes := lapply(1:.N, function(i) {
-    resample_outcomes(first_index[[i]], phase1_outcomes[[i]], phase2_outcomes_pre[[i]])
-  })]
-  
-  #### PHASE 3 -- determine whether a person developed preeclampsia & revised outcomes
-  
-  ## Untreated
-  data[, odds_preeclampsia_untrt := list(exp(phase3$ln_odds_preeclampsia))]
-  data[, prob_preeclampsia_untrt := lapply(odds_preeclampsia_untrt, function(odds) {
-    # Return the transformed probabilities, appending 0 for the first 25 elements
-    c(rep(0, 25), odds / (1 + odds))
-  })]
-  data[, preeclampsia_list_untrt := lapply(prob_preeclampsia_untrt, 
-                                           function(p) rbinom(length(p), size = 1, prob = p))]
-  
-  ## Treated
-  data[, odds_preeclampsia_trt := list(exp(phase3$ln_odds_preeclampsia +
-                                             phase3$treat_effect_ln_OR))]
-  data[, prob_preeclampsia_trt := lapply(odds_preeclampsia_trt, function(odds) {
-    # Return the transformed probabilities, appending 0 for the first 25 elements
-    c(rep(0, 25), odds / (1 + odds))
-  })]
-  data[, preeclampsia_list_trt := lapply(prob_preeclampsia_trt, 
-                                           function(p) rbinom(length(p), size = 1, prob = p))]
-  
-  # Determine the final pregnancy outcomes with preeclampsia timing
-  
-  ## Untreated
-  data[, final_pregnancy_outcomes_untrt := lapply(1:.N, function(i) 
-    preg_outcome(phase1_outcomes[[i]], preeclampsia_list_untrt[[i]], phase3))
-  ]
-  
-  ## Treated
-  data[, final_pregnancy_outcomes_trt := lapply(1:.N, function(i) 
-    preg_outcome(phase2_outcomes[[i]], preeclampsia_list_trt[[i]], phase3))
-    ]
-  
-  ##### PHASE 4 -- Determine if people have SGA
-  
-  ## Untreated
-  data[, sga_untrt := lapply(1:.N, function(i)
-    sga_func(final_pregnancy_outcomes_untrt[[i]], 1, phase4))
-  ]
-  
-  ## Treated
-  data[, sga_trt := lapply(1:.N, function(i)
-    sga_func(final_pregnancy_outcomes_trt[[i]], 1, phase4))
-    ]
-  
-  ##### PHASE 5 -- Introduce censoring
-  data[, censoring := lapply(1:.N, function(i)
-    censoring(phase5, first_index[[i]]))
-    ]
-  
-  # Make data into a tibble and then do the rest of the calculations
-  data2 <- data %>% 
-    as_tibble() %>% 
+  # Create the dataset that going to output
+  data <- dplyr::tibble(
+    
+    sim_id = n_sim, # Simulation ID
+    
+    id = 1:n, # Each individual's ID
+    
+    # Assign treatment here - doesn't matter when but efficient here
+    trt = rbinom(n=n, size=1, prob=0.5),
+    
+    # Identify the index date
+    first_index = gw_index
+    
+  ) %>% 
+    rowwise %>%
+    mutate(
+      
+      #### PHASE 1
+      
+      # Create the pregnancy outcomes for Phase 1 of the data generation
+      #phase1_outcomes = list(sample_outcomes_for_id(phase1)), 
+      phase1_outcomes = sample_outcomes_for_id(phase1), 
+      
+      # Determine if the individual has a fetal death event prior to 18 weeks of gestation
+      last_GA_pre18 = pre18(phase1_outcomes) ,
+      
+      # Create an indicator variable as to whether the patient actually
+      # -- enters the trial. If last_GA_pre20 < first_index, then they can't enter the trial.
+      trial_participant = (first_index <= last_GA_pre18),
+      
+      #### PHASE 2
+      
+      # Apply the same methodology to sample the initial set of pregnancy outcomes for phase 2.
+      phase2_outcomepre = sample_outcomes_for_id(phase2), 
+      
+      # Create all of the outcomes if they had been treated at the first_index
+      phase2_outcomes = resample(first_index, phase1_outcomes, phase2),
+      
+      #### PHASE 3 -- determine whether a person developed preeclampsia & revised outcomes
+      
+      ## Untreated
+      # Calculate their odds of preeclampsia from logistic regression
+      odds_preeclampsia_untrt = list(exp(phase3$ln_odds_preeclampsia)),
+      # Calculate the probability of preeclampsia
+      prob_preeclampsia_untrt = list(c(rep(0,25),
+                                       odds_preeclampsia_untrt/(1+odds_preeclampsia_untrt))),
+      # Use binomial r.v. to determine if someone has preeclampsia
+      preeclampsia_list_untrt = list(rbinom(length(prob_preeclampsia_untrt), 
+                                            size=1, 
+                                            prob=prob_preeclampsia_untrt)),
+      
+      ## Treated
+      # Calculate their odds of preeclampsia from logistic regression
+      odds_preeclampsia_trt = list(exp(phase3$ln_odds_preeclampsia + 
+                                         (phase3$treat_effect_ln_OR))),
+      # Calculate the probability of preeclampsia
+      prob_preeclampsia_trt = list(c(rep(0,25), 
+                                     odds_preeclampsia_trt/(1+odds_preeclampsia_trt))),
+      # Use binomial r.v. to determine if someone has preeclampsia
+      preeclampsia_list_trt = list(rbinom(length(prob_preeclampsia_trt), 
+                                          size=1, 
+                                          prob=prob_preeclampsia_trt)),
+      
+      # Determine the final pregnancy outcomes with preeclampsia timing 
+      ## These are outcomes if all were treated (i.e., potential outcomes)
+      final_pregnancy_outcomes_trt = list(preg_outcome(phase2_outcomes, 
+                                                       preeclampsia_list_trt, 
+                                                       phase3)),
+      ## These are outcomes if all were untreated (i.e., potential outcomes)
+      final_pregnancy_outcomes_untrt = list(preg_outcome(phase1_outcomes,
+                                                         preeclampsia_list_untrt, 
+                                                         phase3)),
+      
+      ##### PHASE 4 -- Determine if people have SGA
+      ## These are outcomes if all were treated (i.e., potential outcomes)
+      sga_trt = sga_func(final_pregnancy_outcomes_trt, 1, phase4),
+      ## These are outcomes if all were untreated (i.e., potential outcomes)
+      sga_untrt = sga_func(final_pregnancy_outcomes_untrt, 0, phase4),
+      #sga = sga_func(final_pregnancy_outcomes, trt, phase4)
+      
+      ##### PHASE 5 
+      first_censoring_gw = censoring(phase5, first_index)
+      
+    ) %>% 
+    ungroup() %>% 
     mutate(final_pregnancy_outcomes_trt = map(final_pregnancy_outcomes_trt, 
                                               ~set_names(.x, str_c(names(.x), "_trt"))),
            final_pregnancy_outcomes_untrt = map(final_pregnancy_outcomes_untrt, 
@@ -115,13 +123,15 @@ each_sim <- function(n_sim, n, gw_index=4){
       end_seed = finish_seed
     )
   
+  # #Testing
+  # testtrt <- subset(data, sga_trt == 1)
+  # table(testtrt$preg_outcome_final_trt)
+  # testutrt <- subset(data, sga_untrt == 1)
+  # table(testutrt$preg_outcome_final_untrt)
+  
   return(data)
   
 }
-
-
-
-
 
 
 
@@ -153,8 +163,7 @@ sample_outcomes_for_id <- function(data) {
   })
   
   #list(outcomes = outcomes)
-  # return(list(outcomes))
-  return(outcomes)
+  return(list(outcomes))
 }
 
 #Testing: outcomes <- test$phase1_outcomes[[1]]
@@ -195,31 +204,62 @@ sample_index_for_id <- function(data) {
 
 
 
-pre18 <- function(outcomes) {
-  # Extract outcomes for gestational weeks 0 through 18 (indices 1:19)
-  outcomes_sub <- outcomes[1:19]  
+
+
+pre18 <- function(outcomes){
+  # Create a subset of gestational weeks 0 through 18, though note that these
+  # -- are indexed as 1:20 because of R's coding style (vector indices start at 1). 
+  # -- Notably for moving forward, outcomes are observed at the following gestational week
+  outcomes_sub <- outcomes[1:19]  # Represents 0:18
   
-  # Find the first occurrence of 'fetaldeath_next'
-  first_ga <- which(outcomes_sub == 'fetaldeath_next')
+  # Identify the first gestational week where we will see a fetal death on the 
+  # -- following gestational week.
+  first_ga <- which(outcomes_sub == 'fetaldeath_next')[1]
   
-  # If no fetal death is found, return 18; otherwise, return first occurrence - 1
-  last_ga <- if (length(first_ga) == 0) 18 else first_ga[1]
+  # Identify the last gestational week that someone could be indexed into the cohort.
+  # -- This would be the last week before someone experiences a fetal death.
+  last_ga <- ifelse(is.na(first_ga),
+                    18,
+                    first_ga - 1) 
+  # Subtracted 1 because first_ga is indexed starting at 1, while our gestational weeks are indexed
+  # -- starting at 0.
   
   return(last_ga)
 }
-
-
 
 
 # Re-sample pregnancy outcomes for those pregnancies that were treated.
 # -- Want to retain their phase1 outcomes until their index event, and then 
 # -- resample all pregnancy outcomes starting at their index.
 # -- This assumes an immediate treatment effect.
-resample_outcomes <- function(first_index, phase1_outcomes, precomputed_phase2) {
-  index <- first_index + 1
-  phase1 <- phase1_outcomes[1:(index - 1)]
-  outcomes <- c(phase1, precomputed_phase2[index:length(precomputed_phase2)])
+resample_outcomes <- function(first_index, phase1_outcomes, phase2){
+  
+  #browser()
+  
+  # Add 1 to accomodate R vector indexing starting at 1
+  index <- first_index + 1 
+  
+  # Grab all the phase1 outcomes that don't change.
+  # -- Want all those values BEFORE the index
+  phase1 <- phase1_outcomes[1:(index-1)]
+  
+  # Re-sample outcomes for phase2
+  # phase2 <- unlist(sample_outcomes_for_id(phase2))
+  sampled_phase2 <- sample_outcomes_for_id(phase2)
+  
+  # Mark suggestion: Rename phase2 here.
+  
+  # Now merge them together
+  # outcomes <- c(phase1, phase2[index:length(phase2)])
+  outcomes <- c(phase1, sampled_phase2[index:length(sampled_phase2)])
+  
+  # # Coerce outcomes to a vector
+  # # -- This step is necessary to make sure that the values come out as the same type as phase1_outcomes.
+  # outcomes <- unlist(outcomes)
+  # 
+  # list(outcomes = outcomes)
   return(outcomes)
+  
 }
 
 
@@ -296,7 +336,13 @@ sga_func <- function(final_pregnancy_outcomes, trt, phase4){
   sga <- ifelse(final_pregnancy_outcomes$preg_outcome_final == "fetaldeath",
                 0,
                 rbinom(1,1, prob = prob_sga))
-
+  #sga <- rbinom(1,1, prob = prob_sga)
+  
+  # SGA does not apply if the pregnancy did not end in a live birth
+  # sga2 <- ifelse(final_pregnancy_outcomes$preg_outcome_final == "fetaldeath",
+  #                0,
+  #                sga)
+  
   return(sga)
 }
 

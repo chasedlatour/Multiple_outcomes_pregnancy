@@ -10,6 +10,7 @@
 # Pull in the necessary libraries
 library(tidyverse)
 library(readxl)
+library(data.table)
 
 # Pull in the data generation functions.
 source("00_data generation functions.R")
@@ -18,7 +19,7 @@ source("00_data generation functions.R")
 # These are the same across scenarios.
 n_sim <- 2
 settings <- list(
-  n = 7500 # 1.5 million
+  n = 7500 # 1000
 )
 
 
@@ -44,6 +45,11 @@ for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
+
+# Revise outcomes under a scenario where people were randomized at 9 weeks post-conception
+
+test <- all_sims[[1]]
+
 
 ### Save the file as an RDS file
 
