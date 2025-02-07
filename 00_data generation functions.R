@@ -92,7 +92,7 @@ each_sim <- function(n_sim, n, gw_index=4){
     ]
   
   ##### PHASE 5 -- Introduce censoring
-  data[, censoring := lapply(1:.N, function(i)
+  data[, first_censoring_gw := lapply(1:.N, function(i)
     censoring(phase5, first_index[[i]]))
     ]
   
