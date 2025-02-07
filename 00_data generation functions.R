@@ -108,13 +108,13 @@ each_sim <- function(n_sim, n, gw_index=4){
   finish_seed <- list(.Random.seed)
   
   ## Store the random states
-  data <- data2 %>% 
+  data3 <- data2 %>% 
     mutate(
       start_seed = initial_seed,
       end_seed = finish_seed
     )
   
-  return(data2)
+  return(data3)
   
 }
 
