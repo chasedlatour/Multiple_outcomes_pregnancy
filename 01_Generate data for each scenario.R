@@ -17,7 +17,7 @@ source("00_data generation functions.R")
 
 # Specify the required values for the simulation
 # These are the same across scenarios.
-n_sim <- 2
+n_sim <- 1
 settings <- list(
   n = 7500 # 1000
 )
@@ -45,11 +45,6 @@ for_sim <- c(list(.x = 1:n_sim, .f=each_sim), settings)
 set.seed(192384756)
 # Simulate the data
 all_sims <- do.call(purrr::map, args = for_sim)
-
-# Revise outcomes under a scenario where people were randomized at 9 weeks post-conception
-
-test <- all_sims[[1]]
-
 
 ### Save the file as an RDS file
 

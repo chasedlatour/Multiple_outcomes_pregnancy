@@ -15,7 +15,7 @@
 # -- used to generate each cohort.
 # This function will be run to generate a cohort 
 # -- for each simulation.
-each_sim <- function(n_sim, n, gw_index=4){
+each_sim <- function(n_sim, n, gw_index=10){
   
   initial_seed <- list(.Random.seed)
   
