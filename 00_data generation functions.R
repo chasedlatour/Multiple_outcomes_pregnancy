@@ -83,7 +83,7 @@ each_sim <- function(n_sim, n, gw_index=10){
   
   ## Untreated
   data[, sga_untrt := lapply(1:.N, function(i)
-    sga_func(final_pregnancy_outcomes_untrt[[i]], 1, phase4))
+    sga_func(final_pregnancy_outcomes_untrt[[i]], 0, phase4))
   ]
   
   ## Treated

@@ -13,8 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(knitr)
 library(kableExtra)
-library(mcstatsim)
-library(ggpattern)
+# library(mcstatsim)
+# library(ggpattern)
 ```
 
 # Pull in the Data
@@ -120,18 +120,19 @@ totals_by_scenario <- n_outcomes %>%
             total_sga = sum(n_sga),
             .groups = 'drop')
 
+
 descriptives <- left_join(n_outcomes, totals_by_scenario, by = ("scenario" = "scenario"))
 
 descriptives2 <- descriptives %>% 
   rowwise() %>% 
-  mutate(perc_pregnancies = round(100*n_pregnancies / total_pregnancies, 1),
-         perc_censored = round(100*n_censored / total_censored, 1),
-         perc_fetal_deaths = round(100*n_fetal_deaths / total_fetal_deaths, 1),
-         perc_live_births = round(100*n_live_births / total_live_births, 1),
-         perc_preeclampsia = round(100*n_preeclampsia / total_live_births, 1),
-         perc_sga = round(100*n_sga / total_live_births, 1)) %>% 
+  mutate(#perc_pregnancies = round(100*n_pregnancies / total_pregnancies, 1),
+         perc_censored = round(100*n_censored / n_pregnancies, 1),
+         perc_fetal_deaths = round(100*n_fetal_deaths / n_pregnancies, 1),
+         perc_live_births = round(100*n_live_births / n_pregnancies, 1),
+         perc_preeclampsia = round(100*n_preeclampsia / n_pregnancies, 1),
+         perc_sga = round(100*n_sga / n_pregnancies, 1)) %>% 
   ungroup() %>% 
-  mutate(pregnancies = paste0(n_pregnancies, " (", perc_pregnancies, "%)"),
+  mutate(pregnancies = n_pregnancies, #paste0(n_pregnancies, " (", perc_pregnancies, "%)"),
          censored = paste0(n_censored, " (", perc_censored, "%)"),
          fetal_deaths = paste0(n_fetal_deaths, " (", perc_fetal_deaths, "%)"),
          live_births = paste0(n_live_births, " (", perc_live_births, "%)"),
@@ -175,34 +176,6 @@ combined_describe_outcomes %>%
 
 # Results
 
-```{r eval=FALSE}
-
-# Create functions to calculate evaluation parameters
-
-## Estimate
-
-calc_estimate <- function(estimates){
-  
-  est <- mean(estimates)
-  est_mcse <- sqrt(var(estimates)/length(estimates))
-  return(list(est = est, est_mcse = est_mcse))
-  
-}
-
-## ESE -- not in mcstatsim package
- 
-calc_ese <- function(estimates, true_param){
-  
-  ese <- sqrt(var(estimates))
-  ese_mcse <- ese / sqrt(2*(length(estimates)-1))
-  return(list(ese = ese, ese_mcse = ese_mcse))
-  
-}
-
-``` 
-
-
-
 
 ```{r}
 
@@ -229,22 +202,22 @@ calculate_simulation_values <- function(dataset){
     summarize(
       
       # True Values
-      truth_r0 = mean(r0_truth),
-      truth_r1 = mean(r1_truth),
-      truth_rd = mean(rd_truth),
+      truth_r0 = mean(r0_truth)*100,
+      truth_r1 = mean(r1_truth)*100,
+      truth_rd = mean(rd_truth)*100,
       truth_rr = exp(mean(log(rr_truth))),
       
       # Kaplan-Meier Estimator
       ## Absolute risk
-      km_r0 = mean(kmr0),
-      km_r1 = mean(kmr1),
+      km_r0 = mean(kmr0)*100,
+      km_r1 = mean(kmr1)*100,
       ## Risk Difference
-      km_rd = mean(kmrd), # Estimate
+      km_rd = mean(kmrd)*100, # Estimate
       km_rd_se = sqrt((1 / (n()*(n()-1)))*
                         sum((kmrd - km_rd)^2)),
-      km_rd_bias = mean(kmrd) - truth_rd,
+      km_rd_bias = km_rd - truth_rd, #mean(kmrd) - truth_rd,
       km_rd_ese = sqrt(var(kmrd)),
-      km_rd_rmse = sqrt(mean((kmrd - truth_rd)^2)),
+      km_rd_rmse = sqrt(mean(((kmrd*100) - truth_rd)^2)),
       ## Risk Ratio
       km_rr = exp(mean(log(kmrr))),
       km_lnrr_se = sqrt((1 / (n()*(n()-1)))*
@@ -256,15 +229,15 @@ calculate_simulation_values <- function(dataset){
       
       # Aalen-Johansen Estimator
       ## Absolute risk
-      aj_r0 = mean(ajr0),
-      aj_r1 = mean(ajr1),
+      aj_r0 = mean(ajr0)*100,
+      aj_r1 = mean(ajr1)*100,
       ## Risk Difference
-      aj_rd = mean(ajrd),
+      aj_rd = mean(ajrd)*100,
       aj_rd_se = sqrt((1 / (n()*(n()-1)))*
                         sum((ajrd - aj_rd)^2)),
-      aj_rd_bias = mean(ajrd) - truth_rd,
+      aj_rd_bias =aj_rd - truth_rd,
       aj_rd_ese = sqrt(var(ajrd)),
-      aj_rd_rmse = sqrt(mean((ajrd - truth_rd)^2)),
+      aj_rd_rmse = sqrt(mean(((100*ajrd) - truth_rd)^2)),
       ## Risk Ratio
       aj_rr = exp(mean(log(ajrr))),
       aj_lnrr_se = sqrt((1 / (n()*(n()-1)))*
@@ -365,17 +338,15 @@ rbind(composite_outcome, sga_fd_only, sga_all) %>%
 
 ```{r}
 
-nsim <- 2000
-
 calc_mcse <- function(dsn, r0, r1, rd, rr, nsim=2000){
   
   mcse <- dsn %>% 
     group_by(scenario) %>% 
     summarize(
-      r0_mcse = sqrt( (1/(nsim * (nsim-1))) * sum(({{r0}} - mean({{r0}}))^2)),
-      r1_mcse = sqrt( (1/(nsim * (nsim-1))) * sum(({{r1}} - mean({{r1}}))^2)),
-      rd_mcse = sqrt( (1/(nsim * (nsim-1))) * sum(({{rd}} - mean({{rd}}))^2)),
-      rr_mcse = sqrt( (1/(nsim * (nsim-1))) * sum((log({{r0}}) - mean(log({{r0}})))^2)),
+      r0_mcse = sqrt( (1/(nsim * (nsim-1))) * sum((({{r0}}*100) - (100*mean({{r0}})))^2)),
+      r1_mcse = sqrt( (1/(nsim * (nsim-1))) * sum((({{r1}}*100) - (100*mean({{r1}})))^2)),
+      rd_mcse = sqrt( (1/(nsim * (nsim-1))) * sum((({{rd}}*100) - (100*mean({{rd}})))^2)),
+      rr_mcse = sqrt( (1/(nsim * (nsim-1))) * sum((log({{rr}}) - mean(log({{rr}})))^2)),
       .groups = 'drop'
     )
   
@@ -387,7 +358,7 @@ calc_mcse <- function(dsn, r0, r1, rd, rr, nsim=2000){
 
 # KM
 composite_km <- calc_mcse(dsn=combined_analyses, r0=`km_composite_ r_0`, r1=`km_composite_ r_1`,
-                          rd = `km_composite_ rr`, rr=`km_composite_ rr`) %>% 
+                          rd = `km_composite_ rd`, rr=`km_composite_ rr`) %>% 
   rename_with(~ paste0("km_", .), c(r0_mcse, r1_mcse, rd_mcse, rr_mcse))
 # AJ
 composite_aj <- calc_mcse(dsn=combined_analyses, r0=`composite_multi_gw r_0`,r1=`composite_multi_gw r_1`,
@@ -510,8 +481,16 @@ figure_efficacy2 <- figure_efficacy %>%
     values_from = value
   ) %>% 
   left_join(truth, by = "scenario") %>% 
-  mutate(rd_absolute_bias = round(abs(composite_truth_rd - RD),4),
-         rr_absolute_bias = round(abs(log(composite_truth_rr) - log(RR)), 4)) 
+  mutate(
+    composite_truth_r1 = 100*composite_truth_r1,
+    composite_truth_r0 = 100*composite_truth_r0,
+    composite_truth_rd = 100*composite_truth_rd,
+    sga_truth_r1 = 100*sga_truth_r1,
+    sga_truth_r0 = 100*sga_truth_r0,
+    sga_truth_rd = 100*sga_truth_rd
+  ) %>% 
+  mutate(rd_absolute_bias = round(abs(composite_truth_rd - RD),1),
+         rr_absolute_bias = round(abs(log(composite_truth_rr) - log(RR)), 2)) 
 
 # Create a data frame with unique composite_truth_rd values for each facet
 unique_rd_values <- figure_efficacy2 %>% 
@@ -549,7 +528,7 @@ ggplot(figure_efficacy2) +
   geom_point(data = figure_efficacy2, aes(y = Estimator, x = composite_truth_r0),
              position = position_nudge(y = -0.2), size = 3, shape = 23, fill = "white", color = "black") +
   labs(y = "Scenario", 
-       x = "Absolute Risk",
+       x = "Absolute Risk (%)",
        fill = "Treatment Group", 
        ) +
   theme_minimal() +
@@ -561,7 +540,7 @@ ggplot(figure_efficacy2) +
         # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
         # panel.grid.minor = element_line(color = "grey70")
         ) +
-  scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2"))
+  scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
   theme(strip.placement = "outside") 
 
 dev.off()
@@ -573,16 +552,16 @@ ggplot(figure_efficacy2) +
   geom_point(aes(y = Estimator, x = RD)) +
   # Horizontal error bars for confidence intervals
   geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 0.125, label = scales::number(rd_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+  geom_label(aes(y = Estimator, x = 1.25, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = composite_truth_rd), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 0.125, label = scales::number(rd_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+   geom_label(aes(y = Estimator, x = 1.25, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
-       x = "Risk Difference",
+       x = "Risk Difference (per 100)",
        fill = "Treatment Group", 
        ) +
-  scale_x_continuous(limits = c(-0.1, 0.15),
-                     breaks = seq(-0.1, 0.1, by  = 0.1)) +
+  scale_x_continuous(limits = c(-10, 1.25),
+                     breaks = seq(-10, 0, by  = 2.5)) +
   theme_minimal() +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 12),
@@ -603,9 +582,9 @@ pdf("Primary efficacy outcome - RRs.pdf", height = 6, width = 3)
 ggplot(figure_efficacy2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.3, label = scales::number(rr_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+  geom_label(aes(y = Estimator, x = 1.06, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   geom_vline(data = unique_rr_values, aes(xintercept = composite_truth_rr), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 1.3, label = scales::number(rr_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+   geom_label(aes(y = Estimator, x = 1.06, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
        x = "Log-Scaled Risk Ratio",
@@ -613,8 +592,9 @@ ggplot(figure_efficacy2) +
        ) +
   scale_x_continuous(
     trans='log10',
-    limits = c(0.8, 1.35),
-    breaks = scales::trans_breaks("log10", function(x) 10^x),
+    limits = c(0.7, 1.09),
+    breaks = seq(0.7, 1, by = 0.1),
+    # breaks = scales::trans_breaks("log10", function(x) 10^x),
     labels = scales::label_number(accuracy = 0.1)
   ) +
   theme_minimal() +
@@ -641,6 +621,8 @@ dev.off()
 ```
 
 # Figure: SGA Outcome
+
+## Scenarios 1-6
 
 ```{r}
 
@@ -693,8 +675,17 @@ aj_safety <- figure_data %>%
 
 figure_safety <- bind_rows(km_safety, aj_safety) %>% 
   left_join(truth, by = "scenario") %>% 
-  mutate(rd_absolute_bias = round(abs(sga_truth_rd - RD),4),
-         rr_absolute_bias = round(abs(log(sga_truth_rr) - log(RR)), 4)) %>% 
+  filter(scenario <= 6) %>% 
+  mutate(
+    composite_truth_r1 = 100*composite_truth_r1,
+    composite_truth_r0 = 100*composite_truth_r0,
+    composite_truth_rd = 100*composite_truth_rd,
+    sga_truth_r1 = 100*sga_truth_r1,
+    sga_truth_r0 = 100*sga_truth_r0,
+    sga_truth_rd = 100*sga_truth_rd
+  ) %>% 
+  mutate(rd_absolute_bias = round(abs(sga_truth_rd - RD),1),
+         rr_absolute_bias = round(abs(log(sga_truth_rr) - log(RR)), 2)) %>% 
   mutate(Estimator = factor(Estimator,
                             levels = c("AJ: 2 Competing Events",
                                        "AJ: 1 Competing Event",
@@ -714,7 +705,7 @@ unique_rd_values <- figure_safety %>%
 #####
 ## Print out the risks
 
-pdf("Primary safety outcome - risks.pdf", height = 9, width = 6)
+pdf("Primary safety outcome - risks - 1-6.pdf", height = 6, width = 4.25)
 
 ggplot(figure_safety) +
   # Incidence bars for Drug A and Comparator
@@ -734,20 +725,19 @@ ggplot(figure_safety) +
   geom_point(data = figure_safety, aes(y = Estimator, x = sga_truth_r0),
              position = position_nudge(y = -0.2), size = 2, shape = 23, fill = "white", color = "black") +
   labs(y = "Scenario", 
-       x = "Absolute Risk",
+       x = "Absolute Risk (%)",
        fill = "Treatment Group", 
        ) +
   theme_minimal() +
-  scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) 
   theme(legend.position = "bottom",
         # axis.title.x.top = element_text(hjust = 0.97),
         axis.text.y = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size =10),
-        # Darken gridlines
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        legend.text = element_text(size =10) #,
+        # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        # panel.grid.minor = element_line(color = "grey70")
         ) +
+  scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
   theme(strip.placement = "outside") 
 
 dev.off()
@@ -764,29 +754,29 @@ figure_safety2 <- figure_safety %>%
   )
 
 
-pdf("Primary safety outcome - RDs.pdf", height = 9, width = 3)
+pdf("Primary safety outcome - RDs - 1-6.pdf", height = 6, width = 3)
 
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RD)) +
    geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 0.125, 
-                 label = scales::number(rd_absolute_bias, accuracy = 0.0001)), 
+  geom_label(aes(y = Estimator, x = 3.75, 
+                 label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
              fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd), 
              linetype = "dashed", 
              color = "red") +
-   geom_label(aes(y = Estimator, x = 0.125, 
-                  label = scales::number(rd_absolute_bias, accuracy = 0.0001)), 
+   geom_label(aes(y = Estimator, x = 3.75, 
+                  label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
               fill = "white", 
               label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
-       x = "Risk Difference",
+       x = "Risk Difference (per 100)",
        fill = "Treatment Group", 
        ) +
-  scale_x_continuous(limits = c(-0.1, 0.15),
-                     breaks = seq(-0.1, 0.1, by  = 0.1)) +
-  # scale_y_discrete(labels = rep("", 36)) +
+  scale_x_continuous(limits = c(-7.5, 5),
+                     breaks = seq(-7.5, 2.5, by  = 2.5)) +
+  scale_y_discrete(labels = rep("", 36)) +
   theme_minimal() +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 12),
@@ -803,14 +793,14 @@ dev.off()
 
 
 
-pdf("Primary safety outcome - RRs.pdf", height = 9, width = 3)
+pdf("Primary safety outcome - RRs - 1-6.pdf", height = 6, width = 3)
 
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.42, label = scales::number(rr_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+  geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rr), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 1.42, label = scales::number(rr_absolute_bias, accuracy = 0.0001)), fill = "white", label.size = NA) +
+   geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
        x = "Log-Scaled Risk Ratio",
@@ -818,9 +808,217 @@ ggplot(figure_safety2) +
        ) +
   scale_x_continuous(
     trans='log10',
-    limits = c(0.7, 1.5),
-    breaks = scales::trans_breaks("log10", function(x) 10^x),
-    labels = scales::label_number(accuracy = 0.1)
+    limits = c(0.85, 1.1),
+    breaks = seq(0.85, 1.05, by = 0.05),
+    # breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::label_number(accuracy = 0.01)
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size =12),
+        axis.title.x.bottom = element_text(hjust = 0.4),
+        axis.title.y=element_blank(),
+        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.minor = element_line(color = "grey70"),
+        strip.placement = "outside"
+        )  
+
+dev.off()
+
+```
+
+## Scenarios 7-12
+
+```{r}
+
+
+z <- qnorm(0.975)
+
+
+## Now, we only want 1 set of KM estimates for each scenario and then each of teh AJ estimates. 
+## Split this up
+
+km_safety <- figure_data %>% 
+  filter(Outcome != "Composite") %>%  
+  # filter(scenario <= 3) %>% 
+  select(scenario, contains("km")) %>% 
+  unique() %>% 
+  mutate(Estimator = "KM") %>% 
+  rename(risk_non_initiators = km_r0,
+         risk_non_initiators_ucl = km_r0_ucl,
+         risk_non_initiators_lcl = km_r0_lcl,
+         risk_initiators = km_r1,
+         risk_initiators_ucl = km_r1_ucl,
+         risk_initiators_lcl = km_r1_lcl,
+         RD = km_rd,
+         RR = km_rr,
+         RD_LCL = km_rd_lcl,
+         RD_UCL = km_rd_ucl,
+         RR_LCL = km_rr_lcl,
+         RR_UCL = km_rr_ucl)
+
+aj_safety <- figure_data %>% 
+  filter(Outcome != "Composite") %>% 
+  # filter(scenario <= 3) %>% 
+  select(scenario, Outcome, contains("aj")) %>% 
+  mutate(Estimator = ifelse(grepl("1", Outcome),
+                            "AJ: 1 Competing Event",
+                            "AJ: 2 Competing Events")) %>% 
+  select(-Outcome) %>% 
+  rename(risk_non_initiators = aj_r0,
+         risk_non_initiators_ucl = aj_r0_ucl,
+         risk_non_initiators_lcl = aj_r0_lcl,
+         risk_initiators = aj_r1,
+         risk_initiators_ucl = aj_r1_ucl,
+         risk_initiators_lcl = aj_r1_ucl,
+         RD = aj_rd,
+         RR = aj_rr,
+         RD_LCL = aj_rd_lcl,
+         RD_UCL = aj_rd_ucl,
+         RR_LCL = aj_rr_lcl,
+         RR_UCL = aj_rr_ucl)
+
+figure_safety <- bind_rows(km_safety, aj_safety) %>% 
+  left_join(truth, by = "scenario") %>% 
+  filter(scenario > 6) %>% 
+  mutate(
+    composite_truth_r1 = 100*composite_truth_r1,
+    composite_truth_r0 = 100*composite_truth_r0,
+    composite_truth_rd = 100*composite_truth_rd,
+    sga_truth_r1 = 100*sga_truth_r1,
+    sga_truth_r0 = 100*sga_truth_r0,
+    sga_truth_rd = 100*sga_truth_rd
+  ) %>% 
+  mutate(rd_absolute_bias = round(abs(sga_truth_rd - RD),1),
+         rr_absolute_bias = round(abs(log(sga_truth_rr) - log(RR)), 2)) %>% 
+  mutate(Estimator = factor(Estimator,
+                            levels = c("AJ: 2 Competing Events",
+                                       "AJ: 1 Competing Event",
+                                       "KM")))
+
+# Create a data frame with unique composite_truth_rd values for each facet
+unique_rd_values <- figure_safety %>% 
+  group_by(scenario) %>% 
+  summarise(sga_truth_rd = unique(sga_truth_rd),
+            sga_truth_r0 = unique(sga_truth_r0),
+            sga_truth_r1 = unique(sga_truth_r1),
+            sga_truth_rr = unique(sga_truth_rr))
+
+
+
+
+#####
+## Print out the risks
+
+pdf("Primary safety outcome - risks - 7-12.pdf", height = 6, width = 4.25)
+
+ggplot(figure_safety) +
+  # Incidence bars for Drug A and Comparator
+  geom_bar(aes(y = Estimator, x = risk_initiators, fill = "Initiators"), stat = "identity", 
+           position = position_nudge(y = 0.2), width = 0.4) +
+  geom_bar(aes(y = Estimator, x = risk_non_initiators, fill = "Non-Initiators"), stat = "identity", 
+           position = position_nudge(y = -0.2), width = 0.4) +
+  # Confidence Intervals for Initiators
+  geom_errorbar(aes(y = Estimator, xmin = risk_initiators_lcl, xmax = risk_initiators_ucl), 
+                width = 0.2, position = position_nudge(y = 0.2)) +
+  # Confidence Intervals for Non-Initiators
+  geom_errorbar(aes(y = Estimator, xmin = risk_non_initiators_lcl, xmax = risk_non_initiators_ucl), 
+                width = 0.2, position = position_nudge(y = -0.2)) +
+  facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
+  geom_point(data = figure_safety, aes(y = Estimator, x = sga_truth_r1),
+             position = position_nudge(y = 0.2), size = 2, shape = 23, fill = "white", color = "black") +
+  geom_point(data = figure_safety, aes(y = Estimator, x = sga_truth_r0),
+             position = position_nudge(y = -0.2), size = 2, shape = 23, fill = "white", color = "black") +
+  labs(y = "Scenario", 
+       x = "Absolute Risk (%)",
+       fill = "Treatment Group", 
+       ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        # axis.title.x.top = element_text(hjust = 0.97),
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size =10) #,
+        # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        # panel.grid.minor = element_line(color = "grey70")
+        ) +
+  scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
+  theme(strip.placement = "outside") 
+
+dev.off()
+
+figure_safety2 <- figure_safety %>% 
+  mutate(
+    Estimator = case_when(Estimator == "KM" ~ "KM",
+                          Estimator == "AJ: 1 Competing Event" ~ "AJ: 1",
+                          Estimator == "AJ: 2 Competing Events" ~ "AJ: 2"),
+    Estimator = factor(Estimator, 
+                       levels = c("AJ: 2",
+                                  "AJ: 1",
+                                  "KM"))
+  )
+
+
+pdf("Primary safety outcome - RDs - 7-12.pdf", height = 6, width = 3)
+
+ggplot(figure_safety2) +
+  geom_point(aes(y = Estimator, x = RD)) +
+   geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
+  geom_label(aes(y = Estimator, x = 3.75, 
+                 label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
+             fill = "white", label.size = NA) +
+  geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd), 
+             linetype = "dashed", 
+             color = "red") +
+   geom_label(aes(y = Estimator, x = 3.75, 
+                  label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
+              fill = "white", 
+              label.size = NA) +
+  facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
+  labs(y = "Scenario", 
+       x = "Risk Difference (per 100)",
+       fill = "Treatment Group", 
+       ) +
+  scale_x_continuous(limits = c(-7.5, 5),
+                     breaks = seq(-7.5, 2.5, by  = 2.5)) +
+  scale_y_discrete(labels = rep("", 36)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size =10),
+        axis.title.x.bottom = element_text(hjust = 0.4),
+        axis.title.y=element_blank(),
+        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.minor = element_line(color = "grey70")
+        ) +
+  theme(strip.placement = "outside") 
+
+dev.off()
+
+
+
+pdf("Primary safety outcome - RRs - 7-12.pdf", height = 6, width = 3)
+
+ggplot(figure_safety2) +
+  geom_point(aes(y = Estimator, x = RR)) +
+  geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
+  geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
+  geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rr), linetype = "dashed", color = "red") +
+   geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
+  facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
+  labs(y = "Scenario", 
+       x = "Log-Scaled Risk Ratio",
+       fill = "Treatment Group", 
+       ) +
+  scale_x_continuous(
+    trans='log10',
+    limits = c(0.85, 1.1),
+    breaks = seq(0.85, 1.05, by = 0.05),
+    # breaks = scales::trans_breaks("log10", function(x) 10^x),
+    labels = scales::label_number(accuracy = 0.01)
   ) +
   theme_minimal() +
   theme(legend.position = "bottom",
@@ -904,5 +1102,19 @@ sga_fd_only %>%
 
 safety_all <- sga_all %>% 
   select(-c(contains("_se")))
+
+```
+
+## Median Gestational Age at Outcome
+
+```{r}
+
+combined_describe_outcomes %>% 
+  filter(strata == "Total") %>% 
+  group_by(preg_outcome_final) %>% 
+  summarize(
+    median_ga = median(median)
+  )
+
 
 ```
