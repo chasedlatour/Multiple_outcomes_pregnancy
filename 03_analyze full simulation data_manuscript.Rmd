@@ -537,7 +537,7 @@ ggplot(figure_efficacy2) +
         axis.text.y = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size =10) #,
-        # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         # panel.grid.minor = element_line(color = "grey70")
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
@@ -552,9 +552,9 @@ ggplot(figure_efficacy2) +
   geom_point(aes(y = Estimator, x = RD)) +
   # Horizontal error bars for confidence intervals
   geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.25, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
+  geom_label(aes(y = Estimator, x = 1.2, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = composite_truth_rd), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 1.25, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
+   geom_label(aes(y = Estimator, x = 1.2, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
        x = "Risk Difference (per 100)",
@@ -568,7 +568,7 @@ ggplot(figure_efficacy2) +
         strip.text = element_text(size = 12),
         legend.text = element_text(size =10),
         axis.title.x.bottom = element_text(hjust = 0.4),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         panel.grid.minor = element_line(color = "grey70")
         ) +
   theme(strip.placement = "outside") 
@@ -603,7 +603,7 @@ ggplot(figure_efficacy2) +
         strip.text = element_text(size = 12),
         legend.text = element_text(size =12),
         axis.title.x.bottom = element_text(hjust = 0.4),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         panel.grid.minor = element_line(color = "grey70")
         ) +
   theme(strip.placement = "outside") 
@@ -734,7 +734,7 @@ ggplot(figure_safety) +
         axis.text.y = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size =10) #,
-        # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         # panel.grid.minor = element_line(color = "grey70")
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
@@ -759,13 +759,13 @@ pdf("Primary safety outcome - RDs - 1-6.pdf", height = 6, width = 3)
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RD)) +
    geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 3.75, 
+  geom_label(aes(y = Estimator, x = 1, 
                  label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
              fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd), 
              linetype = "dashed", 
              color = "red") +
-   geom_label(aes(y = Estimator, x = 3.75, 
+   geom_label(aes(y = Estimator, x = 1, 
                   label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
               fill = "white", 
               label.size = NA) +
@@ -774,9 +774,9 @@ ggplot(figure_safety2) +
        x = "Risk Difference (per 100)",
        fill = "Treatment Group", 
        ) +
-  scale_x_continuous(limits = c(-7.5, 5),
-                     breaks = seq(-7.5, 2.5, by  = 2.5)) +
-  scale_y_discrete(labels = rep("", 36)) +
+  scale_x_continuous(limits = c(-15, 2),
+                     breaks = seq(-15, 0, by  = 5)) +
+  # scale_y_discrete(labels = rep("", 36)) +
   theme_minimal() +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 12),
@@ -784,7 +784,7 @@ ggplot(figure_safety2) +
         legend.text = element_text(size =10),
         axis.title.x.bottom = element_text(hjust = 0.4),
         axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         panel.grid.minor = element_line(color = "grey70")
         ) +
   theme(strip.placement = "outside") 
@@ -798,9 +798,9 @@ pdf("Primary safety outcome - RRs - 1-6.pdf", height = 6, width = 3)
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
+  geom_label(aes(y = Estimator, x = 1.03, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rr), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
+   geom_label(aes(y = Estimator, x = 1.03, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA) +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
        x = "Log-Scaled Risk Ratio",
@@ -808,8 +808,8 @@ ggplot(figure_safety2) +
        ) +
   scale_x_continuous(
     trans='log10',
-    limits = c(0.85, 1.1),
-    breaks = seq(0.85, 1.05, by = 0.05),
+    limits = c(0.7, 1.05),
+    breaks = seq(0.7, 1.05, by = 0.1),
     # breaks = scales::trans_breaks("log10", function(x) 10^x),
     labels = scales::label_number(accuracy = 0.01)
   ) +
@@ -820,7 +820,7 @@ ggplot(figure_safety2) +
         legend.text = element_text(size =12),
         axis.title.x.bottom = element_text(hjust = 0.4),
         axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  
         panel.grid.minor = element_line(color = "grey70"),
         strip.placement = "outside"
         )  
@@ -941,7 +941,7 @@ ggplot(figure_safety) +
         axis.text.y = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size =10) #,
-        # panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         # panel.grid.minor = element_line(color = "grey70")
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
@@ -983,7 +983,7 @@ ggplot(figure_safety2) +
        ) +
   scale_x_continuous(limits = c(-7.5, 5),
                      breaks = seq(-7.5, 2.5, by  = 2.5)) +
-  scale_y_discrete(labels = rep("", 36)) +
+  # scale_y_discrete(labels = rep("", 36)) +
   theme_minimal() +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 12),
@@ -991,7 +991,7 @@ ggplot(figure_safety2) +
         legend.text = element_text(size =10),
         axis.title.x.bottom = element_text(hjust = 0.4),
         axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         panel.grid.minor = element_line(color = "grey70")
         ) +
   theme(strip.placement = "outside") 
@@ -1027,7 +1027,7 @@ ggplot(figure_safety2) +
         legend.text = element_text(size =12),
         axis.title.x.bottom = element_text(hjust = 0.4),
         axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey50"),  # Darker major gridlines
+        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
         panel.grid.minor = element_line(color = "grey70")
         ) +
   theme(strip.placement = "outside") 
