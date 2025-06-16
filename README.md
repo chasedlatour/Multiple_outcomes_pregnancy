@@ -1,15 +1,13 @@
-The code in this repository was used to conduct a simulation study to explore bias that arises in treatment effect estimates according to how multinomial outcomes (i.e., competing events) are handled in studies of the effects of prenatal medication exposures on pregnancy outcomes. Multiple files are included in this repository. There are multiple files in this repository.
+The code in this repository includes a R project that was used to conduct a simulation study to explore bias that arises in treatment effect estimates according to how multinomial outcomes (i.e., competing events) are handled in studies of the effects of prenatal medication exposures on pregnancy outcomes. This manuscript was originally published to arXiv in April 2025: https://arxiv.org/abs/2504.12415. It is currently under review at Paediatric and Perinatal Epidemiology.
+
+Multiple files are included in this repository. 
 
 The .xlsx files were used to specify the data generation parameters for each scenario included in our simulation. The files named as a scenario number were used for the simulation. The file named "Simulation parameters.xlsx" was an original file that was used for testing: some justification for our parameter choices are included in this file.
 
-To generate the simulation data, the following files will need to be run:
-1. Data generation functions.R -- This file contains all of the functions used to generate our simulation data for each scenario.
-2. Data generation - scenarios.R -- The actual data generation for each scenario was conducted in this file.
+This project uses the renv package to track versions of other packages used throughout: https://rstudio.github.io/renv/articles/renv.html. To start, use the `renv::restore()` function to install the same versions of the packages originally used in the analysis.
 
-To analyze the simulation data, the following files will need to be run:
-1. analysis functions.R -- This file contains all of the functions used to analyze our simulation data for a scenario.
-2. Analyses.R -- This file runs the analysis functions for each of the scenarios. This file outputs datasets with the analysis results.
+To generate the simulated data, you will run the file `01_generate data for each scenario.R`. This file calls the file `00_data generation functions.R`, which contains all fo the functions used to generate our simulated data.
 
-Finally, the view the results from the simulation:
-1. descriptive results_1sim_large_n.Rmd -- This RMD file outputs an HTML with descriptive results from each scenario.
-2. review results_1sim_large_n.Rmd -- This RMD file outputs an HTML file with the results of the analyses from each scenario.
+To analyze the simulated data, you will run the file `02_Run analyses on generated data.R`. This file can only be run after the full set of simulated data has been created.
+
+Finally, the RMD files that start with `03_analyze full simulation data` analyze the simulated data for each scenario. The file with the name ending in `_manuscript.Rmd` should contain all code used to generate numbers provided in the manuscript.
