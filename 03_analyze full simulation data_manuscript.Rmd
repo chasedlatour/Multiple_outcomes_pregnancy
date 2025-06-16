@@ -531,16 +531,18 @@ ggplot(figure_efficacy2) +
        ) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size=14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 12, family = "Calibri"),
-        axis.title.x = element_text(family = "Calibri", size=14),
-        axis.title.y = element_text(family = "Calibri", size=14),
-        plot.title = element_text(family = "Calibri", size=14),
-        legend.title = element_text(family = "Calibri", size=12),
-        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        # panel.grid.minor = element_line(color = "grey70")
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size=14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 12, family = "Calibri", color="black"),
+        axis.title.x = element_text(family = "Calibri", size=14, color="black"),
+        axis.title.y = element_text(family = "Calibri", size=14, color="black"),
+        plot.title = element_text(family = "Calibri", size=14, color="black"),
+        legend.title = element_text(family = "Calibri", size=12, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
   theme(strip.placement = "outside") 
@@ -554,12 +556,8 @@ ggplot(figure_efficacy2) +
   geom_point(aes(y = Estimator, x = RD)) +
   # Horizontal error bars for confidence intervals
   geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
-  # geom_text(aes(y = Estimator, x = 1.2, 
-  #             label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
-  #         family = "Calibri", size = 8) +
-  # geom_label(aes(y = Estimator, x = 1.2, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA, family="Calibri") +
   geom_vline(data = unique_rd_values, aes(xintercept = composite_truth_rd), linetype = "dashed", color = "red") +
-   geom_label(aes(y = Estimator, x = 1.2, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA, family = "Calibri", size=4.5) +
+   geom_label(aes(y = Estimator, x = 1.2, label = scales::number(rd_absolute_bias, accuracy = 0.1)), fill = "white", label.size = NA, family = "Calibri", size=3.7, color="black") +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
        x = "Risk Difference (per 100)",
@@ -569,16 +567,18 @@ ggplot(figure_efficacy2) +
                      breaks = seq(-10, 0, by  = 5)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
         # legend.text = element_text(size = 10, family = "Calibri"),
-        axis.title.x = element_text(family = "Calibri", size=14),
-        axis.title.y = element_text(family = "Calibri", size=14),
-        plot.title = element_text(family = "Calibri", size=14),
-        axis.title.x.bottom = element_text(hjust = 0.4),
-        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        axis.title.x = element_text(family = "Calibri", size=14, color="black"),
+        axis.title.y = element_text(family = "Calibri", size=14, color="black"),
+        plot.title = element_text(family = "Calibri", size=14, color="black"),
+        axis.title.x.bottom = element_text(hjust = 0.4, color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   theme(strip.placement = "outside") 
 
@@ -591,11 +591,11 @@ pdf("Primary efficacy outcome - RRs.pdf", height = 6, width = 3.1)
 ggplot(figure_efficacy2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.06, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=4.5) +
+  geom_label(aes(y = Estimator, x = 1.06, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=3.7, color="black") +
   geom_vline(data = unique_rr_values, aes(xintercept = composite_truth_rr), linetype = "dashed", color = "red") +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
-       x = "Log-Scaled Risk Ratio",
+       x = "Risk Ratio (log-scale)",
        fill = "Treatment Group", 
        ) +
   scale_x_continuous(
@@ -607,15 +607,17 @@ ggplot(figure_efficacy2) +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri"),
-        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   theme(strip.placement = "outside") 
 
@@ -742,15 +744,17 @@ ggplot(figure_safety) +
   theme_minimal() +
   theme(legend.position = "bottom",
         # axis.title.x.top = element_text(hjust = 0.97),
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri")
-        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        # panel.grid.minor = element_line(color = "grey70")
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
   theme(strip.placement = "outside") 
@@ -776,7 +780,7 @@ ggplot(figure_safety2) +
    geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
   geom_label(aes(y = Estimator, x = 1, 
                  label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
-             fill = "white", label.size = NA, family="Calibri", size=4.5) +
+             fill = "white", label.size = NA, family="Calibri", size=3.7, color="black") +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd), 
              linetype = "dashed", 
              color = "red") +
@@ -790,16 +794,18 @@ ggplot(figure_safety2) +
   # scale_y_discrete(labels = rep("", 36)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri"),
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
         #axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   theme(strip.placement = "outside") 
 
@@ -812,11 +818,11 @@ pdf("Primary safety outcome - RRs - 1-6.pdf", height = 6, width = 3.1)
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.03, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=4.5) +
+  geom_label(aes(y = Estimator, x = 1.03, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=3.7, color="black") +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rr), linetype = "dashed", color = "red") +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
-       x = "Log-Scaled Risk Ratio",
+       x = "Risk Ratio (log-scale)",
        fill = "Treatment Group", 
        ) +
   scale_x_continuous(
@@ -828,17 +834,19 @@ ggplot(figure_safety2) +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri"),
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
         axis.title.x.bottom = element_text(hjust = 0.4),
         #axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey70"),
-        panel.grid.minor = element_line(color = "grey70"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         strip.placement = "outside"
         )  
 
@@ -955,15 +963,17 @@ ggplot(figure_safety) +
   theme_minimal() +
   theme(legend.position = "bottom",
         # axis.title.x.top = element_text(hjust = 0.97),
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri")
-        # panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        # panel.grid.minor = element_line(color = "grey70")
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   scale_fill_manual(values = c("Initiators" = "#E69F00", "Non-Initiators" = "#0072B2")) +
   theme(strip.placement = "outside") 
@@ -989,7 +999,7 @@ ggplot(figure_safety2) +
    geom_errorbarh(aes(y = Estimator, xmin = RD_LCL, xmax = RD_UCL), height = 0.1, color = "black") +
   geom_label(aes(y = Estimator, x = 4.5, 
                  label = scales::number(rd_absolute_bias, accuracy = 0.1)), 
-             fill = "white", label.size = NA, family="Calibri", size=4.5) +
+             fill = "white", label.size = NA, family="Calibri", size=3.7, color="black") +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rd), 
              linetype = "dashed", 
              color = "red") +
@@ -1003,17 +1013,19 @@ ggplot(figure_safety2) +
   # scale_y_discrete(labels = rep("", 36)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri"),
-        axis.title.x.bottom = element_text(hjust = 0.4),
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.x.bottom = element_text(hjust = 0.4, color="black"),
         # axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   theme(strip.placement = "outside") 
 
@@ -1026,11 +1038,11 @@ pdf("Primary safety outcome - RRs - 7-12.pdf", height = 6, width = 3.1)
 ggplot(figure_safety2) +
   geom_point(aes(y = Estimator, x = RR)) +
   geom_errorbarh(aes(y = Estimator, xmin = RR_LCL, xmax = RR_UCL), height = 0.1, color = "black") +
-  geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=4.5) +
+  geom_label(aes(y = Estimator, x = 1.08, label = scales::number(rr_absolute_bias, accuracy = 0.01)), fill = "white", label.size = NA, family="Calibri", size=3.7, color="black") +
   geom_vline(data = unique_rd_values, aes(xintercept = sga_truth_rr), linetype = "dashed", color = "red") +
   facet_wrap(scenario ~ ., ncol = 1, strip.position = "left") +
   labs(y = "Scenario", 
-       x = "Log-Scaled Risk Ratio",
+       x = "Risk Ratio (log-scale)",
        fill = "Treatment Group", 
        ) +
   scale_x_continuous(
@@ -1042,17 +1054,19 @@ ggplot(figure_safety2) +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.y = element_text(size = 14, family = "Calibri"),
-        axis.text.x = element_text(size = 14, family = "Calibri"),
-        strip.text = element_text(size = 14, family = "Calibri"),
-        legend.text = element_text(size = 14, family = "Calibri"),
-        axis.title.x = element_text(size=14, family = "Calibri"),
-        axis.title.y = element_text(size=14, family = "Calibri"),
-        plot.title = element_text(size=14, family = "Calibri"),
-        axis.title.x.bottom = element_text(hjust = 0.4),
+        axis.text.y = element_text(size = 14, family = "Calibri", color="black"),
+        axis.text.x = element_text(size = 14, family = "Calibri", color="black"),
+        strip.text = element_text(size = 14, family = "Calibri", color="black"),
+        legend.text = element_text(size = 14, family = "Calibri", color="black"),
+        axis.title.x = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.y = element_text(size=14, family = "Calibri", color="black"),
+        plot.title = element_text(size=14, family = "Calibri", color="black"),
+        axis.title.x.bottom = element_text(hjust = 0.4, color="black"),
         # axis.title.y=element_blank(),
-        panel.grid.major = element_line(color = "grey70"),  # Darker major gridlines
-        panel.grid.minor = element_line(color = "grey70")
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", linewidth = 0.3),
+        panel.grid.minor.x = element_line(color = "grey70", linewidth = 0.3),
         ) +
   theme(strip.placement = "outside") 
 
