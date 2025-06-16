@@ -1,4 +1,4 @@
-The code in this repository was used to conduct a simulation study to explore bias that arises in treatment effect estimates according to how multinomial outcomes (i.e., competing events) are handled in studies of the effects of prenatal medication exposures on pregnancy outcomes. Multiple files are included in this repository. There are multiple files in this repository.
+The code in this repository was used to conduct a simulation study to explore bias that arises in treatment effect estimates according to how multinomial outcomes (i.e., competing events) are handled in studies of the effects of prenatal medication exposures on pregnancy outcomes. Multiple files are included in this repository. 
 
 The .xlsx files were used to specify the data generation parameters for each scenario included in our simulation. The files named as a scenario number were used for the simulation. The file named "Simulation parameters.xlsx" was an original file that was used for testing: some justification for our parameter choices are included in this file.
 
